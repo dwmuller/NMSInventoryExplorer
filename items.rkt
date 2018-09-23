@@ -13,8 +13,8 @@
 
 (define (canonicalize-input input)
   (match input
-    [(list n item) input]
-    [_ (list 1 input)]))
+    [(list n item) #:when (integer? n) (symbol? item) input]
+    [sym #:when (symbol? sym) (list 1 sym)]))
 
 (define (input->alternatives-list input-spec)
   ; Expands an input spec into a list of alternatives, each canonicalized to include a count (which can be implicitly 1 in the spec).
@@ -35,6 +35,9 @@
 
 (define (expand-recipe recipe)
   (match recipe
+    [(list 'craft count inputs ...)
+     #:when (integer? count)
+     (map (lambda (inputs) (list* 'craft count inputs)) (permute-input-list inputs))]
     [(list 'craft inputs ...)
      (map (lambda (inputs) (list* 'craft 1 inputs)) (permute-input-list inputs))]
     [(list 'refine count inputs ...)
@@ -128,8 +131,9 @@
 (define-item Living-Glass undefined
   (craft Lubricant (5 Glass)))
 (define-item Nitrogen-Salt undefined
+  (craft (250 Nitrogen) (50 Condensed-Carbon))
   (refine
-   (Nitrogen 100)
+   (100 Nitrogen)
    (or (20 Carbon) (10 Condensed-Carbon))
    (or (10 Salt) (5 Chlorine))))
 (define-item Quantum-Processor undefined
