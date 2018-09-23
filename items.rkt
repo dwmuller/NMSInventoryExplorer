@@ -3,18 +3,18 @@
 (require racket/undefined)
 (require racket/trace)
 
-(struct item-info (name base-value produced-by)
+(struct item$ (name base-value produced-by)
   #:transparent)
 (define items (make-hash))
 
-(struct recipe (action output count input->count) #:transparent)
+(struct recipe$ (action output count inputs) #:transparent)
 (define all-recipes '())
 
 
 (define (canonicalize-input input)
   (match input
-    [(list n item) #:when (integer? n) (symbol? item) input]
-    [sym #:when (symbol? sym) (list 1 sym)]))
+    [(list n item) #:when (integer? n) (symbol? item) (list item n)]
+    [item #:when (symbol? item) (list item 1)]))
 
 (define (input->alternatives-list input-spec)
   ; Expands an input spec into a list of alternatives, each canonicalized to include a count (which can be implicitly 1 in the spec).
@@ -33,25 +33,25 @@
 (define (permute-input-list input-specs)
   (permute-lists (map input->alternatives-list input-specs)))
 
-(define (expand-recipe recipe)
+(define (expand-recipe target recipe)
   (match recipe
-    [(list 'craft count inputs ...)
-     #:when (integer? count)
-     (map (lambda (inputs) (list* 'craft count inputs)) (permute-input-list inputs))]
+    [(list 'craft output-count inputs ...)
+     #:when (integer? output-count)
+     (map (lambda (inputs) (recipe$ 'craft target output-count inputs)) (permute-input-list inputs))]
     [(list 'craft inputs ...)
-     (map (lambda (inputs) (list* 'craft 1 inputs)) (permute-input-list inputs))]
-    [(list 'refine count inputs ...)
-     #:when (integer? count)
-     (map (lambda (inputs) (list* 'refine count inputs)) (permute-input-list inputs))]
+     (map (lambda (inputs) (recipe$ 'craft target 1 inputs)) (permute-input-list inputs))]
+    [(list 'refine output-count inputs ...)
+     #:when (integer? output-count)
+     (map (lambda (inputs) (recipe$ 'refine target output-count inputs)) (permute-input-list inputs))]
    [(list 'refine  inputs ...)
-     (map (lambda (inputs) (list* 'refine 1 inputs)) (permute-input-list inputs))]))
+     (map (lambda (inputs) (recipe$ 'refine target 1 inputs)) (permute-input-list inputs))]))
 
-(define (canonicalize-recipes recipes)
-  (append-map expand-recipe recipes))
+(define (canonicalize-recipes target recipes)
+  (append-map (lambda (recipe) (expand-recipe target recipe)) recipes))
 
 (define-syntax-rule (define-item name base-value recipes ...)
-  (let ([r (canonicalize-recipes (quote (recipes ...)))])
-    (hash-set! items 'name (item-info (quote name) base-value r))
+  (let ([r (canonicalize-recipes 'name (quote (recipes ...)))])
+    (hash-set! items 'name (item$ (quote name) base-value r))
     (set! all-recipes (append r all-recipes))))
 
 
