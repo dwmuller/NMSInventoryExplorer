@@ -1,6 +1,8 @@
 #lang racket
 
 (require data/heap)
+(require racket/generator)
+(require racket/pretty)
 
 (require "items.rkt"
          "recipes.rkt"
@@ -33,115 +35,137 @@
       (hash-remove inventory item)
       (hash-set inventory item count)))
 
+(define (inventory-shortfall inventory item count)
+  (max 0 (- count (inventory-available inventory item))))
+
 (define (inventory-withdraw+unsatisfied inventory item num)
   (define cur (hash-ref inventory item 0))
   (cond
     [(<= cur num) (values (hash-remove inventory item) (- num cur)) ]
     [(>  cur num) (values (hash-set inventory item (- cur num)) 0)]))
 
+(define (inventory-empty? inventory)
+  (zero? (hash-count inventory)))
+
 
 ;;; State
-(struct state (; (recipe . iterations) in approximate order
+;;;
+;;; A state represents a potential sequence of recipe applications and the
+;;; deficit at the start of the sequence, needed to complete the sequence.
+;;;
+;;; The initial state consists of an empty sequence, and a deficit representing
+;;; the products that are wanted to withdraw from inventory.
+;;;
+;;; A success state has an empty deficit inventory.
+;;;
+;;; A state is expanded by selecting a deficit item, a recipe that will produce it,
+;;; and a number of iterations of that recipe to wipe the deficit out. Order matters.
+;;; The number of permutations is large, and some permutations are equivalent.
+;;; Some recipe applications produce more output than necessary; the extra is ignored,
+;;; but can play a role in preferring a state that performs that recipe earlier in the sequence,
+;;; if the extra input can be used.
+
+(struct state (; (recipe . iterations) in approximate order:
                recipe-applications
-               ; Inventory that will be consumed by the sequence
-               will-consume
-               ; Inventory that will be produced by the sequence
-               will-produce)
-  #:transparent
-  #:constructor-name make-state)
+               ; Deficit at start of sequence:
+               deficit)
+  #:transparent)
 
-(define (state-net-result s item initial)
-  (- (+ (inventory-available initial item)
-        (inventory-available (state-will-produce s) item))
-     (inventory-available (state-will-consume s) item)))
+(define (make-state recipe-applications deficit initial)
+  (define s (state recipe-applications deficit))
+;  (pretty-display s) (newline)
+  s)
 
-(define (state-deficit s initial)
-  (for/fold ([result '()])
-            ([item (hash-keys (state-will-consume s))])
-    (define net (state-net-result s item initial))
-    (if (negative? net)
-        (cons (cons item (- net)) result)
-        result)
-    ))
+(define (state-closed? s)
+  (inventory-empty? (state-deficit s)))
 
-(define (state-closed? s initial)
-  (empty? (state-deficit s initial)))
+;;; Heuristic functions for a state.
+
+;; estimate number of batches or crafting steps.
+(define (steps recipe-application)
+  (define recipe (car recipe-application))
+  (define iterations (cdr recipe-application))  
+  (max (ceiling (/ (* iterations (recipe$-count recipe)) 250))
+       (apply max (map
+                   (λ (input)
+                     (ceiling (/ (* iterations (cdr input)) 250)))
+                   (recipe$-inputs recipe)))))
+
+(define (state-cost state initial)
+  (+ (* 0 (length (state-recipe-applications state)))
+     (* 10 (foldl (λ (a sum) (+ sum (steps a))) 0 (state-recipe-applications state)))
+     (* 0 (foldl (λ (a sum) (+ sum (cdr a))) 0 (state-recipe-applications state)))
+     (* 100 (hash-count (state-deficit state)))
+     (* 0 (apply + (hash-values (state-deficit state))))))
 
 ;;; Cost-based search for a sequence of recipe applications to produce a quantity of an item.
 ;;;
-;;; state:  (recipe-applications will-consume)
-;;; recipe-applications: ((recipe . iter-count) ...)
-;;;
-;;; The first element is a list of recipes/iteration count pairs.
-;;;
+;;; deficit(item) =>
+;;;   initial-deficit(item)
+;;;   + sum(inputs(item)*iter)
+;;;   - sum(output(item)*iter)
+;;;   - initial-inventory(item)
+(define (expand-state s initial-inventory final-withdrawl)
 
-;;; Alternate recipes cause a proliferation of alternate states.
-;;; Unsatisfied inputs engender a new set of antecedent recipes.
-;;;
-;;; closed state: A state with empty deficit-inventory.
-;;; state cost heuristics:
-;;; v1:  A*cost(consumed-inventory) + B*(sum of recipe costs)
-;;;
-;;; inventory cost:
-;;; v1: unit count
-;;;
-;;; recipe cost:
-;;; v1:  iter-count
+  (define (withdraw item count inventory deficit)
+    (define-values (i shortfall)
+      (inventory-withdraw+unsatisfied inventory item count))
+    (values i (inventory-deposit deficit item shortfall)))
+    
+  (define (apply-recipe recipe iterations inventory deficit)
+    (define-values (i d)
+      (for/fold ([new-inventory inventory]
+                 [new-deficit deficit])
+                ([input (recipe$-inputs recipe)])
+        (withdraw (car input) (* iterations (cdr input)) new-inventory new-deficit)))
+    (values (inventory-deposit i (recipe$-output recipe) (* iterations (recipe$-count recipe)))
+            d))
+    
+  (define (calc-inventories recipe-applications initial-inventory final-withdrawl)
+    (define-values (i d)
+      (for/fold ([inventory initial-inventory]
+                 [deficit (make-inventory)])
+                ([recipe-app recipe-applications])
+        (apply-recipe (car recipe-app) (cdr recipe-app) inventory deficit)))
+    (for/fold ([inventory i]
+               [deficit d])
+              ([(item count) final-withdrawl])
+      (withdraw item count inventory deficit)))
+      
+  (generator ()
+             (for ([(target-item count-needed) (state-deficit s)])
+               (for ([recipe (get-recipes-for target-item)])
+                 ;; When calculating the repetitions of a recipe, the net count takes
+                 ;; into account that it may use its own output as an input.
+                 (define iterations (ceiling (/ count-needed (recipe$-net-count recipe))))
+                 (define applications (cons (cons recipe iterations) (state-recipe-applications s)))
+                 ;; Calculate the deficit by simulating the recipe applications in forward
+                 ;; direction. (Calculating this incrementally is hard.)
+                 (define-values (inventory deficit)
+                   (calc-inventories applications initial-inventory final-withdrawl))
+                 (yield (make-state
+                         applications
+                         deficit
+                         initial-inventory))))
+             (void)))
 
-
-(define (expand-state s avail)
-
-  (define (add-recipe-consumption recipe iter inventory)
-    (for/fold ([result inventory])
-              ([input (recipe$-inputs recipe)])
-      (inventory-deposit result (car input) (* iter (cdr input)))))
-  
-  ;(printf "Expanding ~s~n" s)
-  ;; Permute the possible next recipe applications for the needed items.
-  (define recipe-lists
-    (for/fold ([rl '()])
-              ([net-pair (state-deficit s avail)])
-      (define output-item (car net-pair))
-      (define needed (cdr net-pair))
-      (define alternate-recipes (get-recipes-for output-item))
-      (cons (for/list ([recipe alternate-recipes])
-              ;; When calculating the repetitions of a recipe, we have to take
-              ;; into account that it may use its own output as an input.
-              (define iterations (ceiling (/ needed (recipe$-net-count recipe))))
-              (cons recipe iterations))
-            rl)))
-  (define recipe-application-sequences
-    (apply permute-lists recipe-lists))
-  (for/fold ([new-states '()])
-            ([app-list recipe-application-sequences])
-    (cons (call-with-values
-           (λ () 
-             (for/fold ([new-app-list (state-recipe-applications s)]
-                        [new-will-consume (state-will-consume s)]
-                        [new-will-produce (state-will-produce s)])
-                       ([app app-list])
-               (define recipe (car app))
-               (define iterations (cdr app))
-               (values (cons app new-app-list)
-                       (add-recipe-consumption recipe iterations new-will-consume)
-                       (inventory-deposit new-will-produce (get-item (recipe$-output recipe)) (* iterations (recipe$-count recipe))))))
-           make-state)
-          new-states)))
-
-(define (get-best-recipe-sequence item num initial-inventory state-cost)
+(define (get-best-recipe-sequence item num initial-inventory)
 
   (define (states<=? s1 s2)
     (<= (state-cost s1 initial-inventory) (state-cost s2 initial-inventory)))
+  (define (heap-empty? heap) (zero? (heap-count heap)))
+  (define (heap-any? heap)  (not (zero? (heap-count heap))))
 
-  (define will-consume (make-inventory (cons item num)))
-  (define will-produce (make-inventory))
-  (define initial-state (make-state '() will-consume will-produce))
+  (define final-withdrawl (make-inventory (cons item num)))
+  (define initial-deficit (make-inventory (cons item (inventory-shortfall initial-inventory item num))))
+  (define initial-state (make-state '() initial-deficit initial-inventory))
   (define pending-states (make-heap states<=?))
   (define expanded-states (make-heap states<=?))
   (define closed-states (make-heap states<=?))
-  (for ([s (expand-state initial-state initial-inventory)])
-    (heap-add! pending-states s))
 
+  (for ([s (in-producer (expand-state initial-state initial-inventory final-withdrawl) (void))])
+         (heap-add! pending-states s))
+  
   ; Repeatedly expand the best state into next states by
   ; adding alternate recipe applications.
   ; State cost increases as applications are added, so
@@ -154,55 +178,47 @@
   ; execute that recipe chain.
 
   ;
-  ;
-  ; TODO: Prioritize alternate recipe selection - prefer satisfiable.
-  ;
-  ; TODO: Why do we keep using X to produce more X? Used 100 Gamma-Root to make 200 GR to make 400 GR - should have a deficit of 100 GR.
-  ;
   ; TODO: Provide alternatives - ties or close?
+  ; TODO: Continue past first closed state to find better solutions?
   ;
-  (for ([i (in-range 50)]
+  (for ([i (in-range 10000)]
         #:unless (zero? (heap-count pending-states)))
+    #:break (not (zero? (heap-count closed-states)))
     (define best (heap-min pending-states))
     (heap-remove-min! pending-states)
     (cond
-      [(state-closed? best initial-inventory)
+      [(state-closed? best)
        (heap-add! closed-states best)]
       [else
        (heap-add! expanded-states best)
-       (for ([s (expand-state best initial-inventory)])
-         (heap-add! pending-states s))]))
+       (for ([s (in-producer (expand-state best initial-inventory final-withdrawl) (void))])
+         (heap-add! pending-states s))])
+    (when (zero? (modulo i 100))
+      (printf "~s: ~s ~s~n" i (heap-count expanded-states) (heap-count pending-states))))
   (define best
     (cond
-      [(not (zero? (heap-count closed-states)))
-       (heap-min closed-states)]
-      [(zero? (heap-count pending-states))
-       (heap-min expanded-states)]
-      [(states<=? (heap-min expanded-states) (heap-min pending-states))
-       (heap-min expanded-states)]
-      [else (heap-min pending-states)]))
+      [(heap-any?   closed-states)    (heap-min closed-states)]
+      [(heap-empty? pending-states)   (heap-min expanded-states)]
+      [else
+       (define e (heap-min expanded-states))
+       (define p (heap-min pending-states))
+       (if (states<=? e p) e p)]))
   (values (state-recipe-applications best)
-          (state-deficit best initial-inventory)))
+          (state-deficit best)))
 
 (require racket/trace)
 ;(trace make-state)
 ;(trace make-inventory)
 ;(trace state-closed?)
-(trace expand-state)
+;(trace expand-state)
 ;(trace state)
 
-;;; Heuristic function for a state.
-(define (state-cost state initial)
-  (+ (* 10 (length (state-recipe-applications state)))
-     (* 0 (foldl (λ (a sum) (+ sum (cdr a))) 0 (state-recipe-applications state)))
-     (* 100 (apply + (hash-values (state-will-consume state))))
-     (* 10 (foldl (λ (a sum) (+ sum (cdr a))) 0 (state-deficit state initial)))))
-
+;;; Display functions for development
 (define (display-recipe-application r num)
   (printf "~s X ~s:~n" (recipe$-action r) num)
   (for ([i (recipe$-inputs r)])
     (printf "  ~v ~v~n" (* num (cdr i)) (item$-name (car i))))
-  (printf "  -> ~v ~v~n" (* num (recipe$-count r)) (recipe$-output r)))
+  (printf "  -> ~v ~v~n" (* num (recipe$-count r)) (item$-name (recipe$-output r))))
   
 (define (display-recipe-applications recipe-applications)
   (for ([r recipe-applications])
@@ -210,7 +226,7 @@
 
 (define (display-best-recipe-sequence  item-name num inventory-forms)
   (define initial-inventory (apply make-inventory (map canonicalize-input-form inventory-forms)))
-  (define-values (s i) (get-best-recipe-sequence (get-item item-name) num initial-inventory state-cost))
+  (define-values (s i) (get-best-recipe-sequence (get-item item-name) num initial-inventory))
   (display-recipe-applications s)
   (display i))
 

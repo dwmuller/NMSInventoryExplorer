@@ -9,6 +9,9 @@
 
 (struct item$ (name base-value) #:transparent)
 
+; Not all base values are known.
+; For items thought to be available only from sentinel machines, the value
+; is set to 1 billion.
 (define raw-items
   '((Activated-Cadmium 450)
     (Activated-Copper 245)
@@ -108,7 +111,7 @@
     (Oxygen-Capsule 350)
     (Oxygen-Filter 615)
     (Projectile-Ammo 50)
-    Quad-Servo
+    (Quad-Servo 1000000000)
     (Quantum-Processor 4400000)
     (Salt-Refractor 30500)
     (Semiconductor 320000)
@@ -119,7 +122,7 @@
     (Thermic-Condensate 50000)
     (Unstable-Gel 50000)
     (Unstable-Plasma 5750)
-    Walker-Brain
+    (Walker-Brain 1000000000)
     (Warp-Cell 46750)))
 
 (define items (make-hasheq
