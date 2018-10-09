@@ -4,6 +4,9 @@
 (require "items.rkt"
          "inventory.rkt")
 
+(provide get-latest-game-save-file-path
+         read-inventory)
+
 ; JSON nodes containing inventory slots:
 ; Exosuit General: PlayerStateData.Inventory
 ; Exosuit Cargo: PlayerStateData.Inventory_Cargo
@@ -101,9 +104,6 @@
         
         ))
 
-;; Ids of items that we ignore as irrelevant for our purposes here.
-(define ignored-item-ids
-  '("^JET1"))
 (define name-to-json-tag (make-hasheq (hash-map json-tag-to-name (λ (k v) (cons v k)))))
 
 (define (get-json-element json . names)

@@ -255,6 +255,8 @@
      (build Hot-Ice Thermic-Condensate))
     (Cryogenic-Chamber
      (build Living-Glass Cryo-Pump))
+    (Deflector-Shield
+     (build (Chromatic-Metal 100) (Sodium-Nitrate 25)))
     (Di-hydrogen-Jelly
      (build (Di-hydrogen 40)))
     (Dirty-Bronze
@@ -262,6 +264,8 @@
      (refine (Pyrite 30)
              (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
              (or (Ferrite-Dust 120) (Pure-Ferrite 60))))
+    (Efficient-Thrusters
+     (build Di-hydrogen-Jelly (Tritium 100) (Technology-Module 2)))
     (Enriched-Carbon
      (refine
       (Radon 100)
@@ -302,6 +306,8 @@
      (build Oxygen-Filter (Gold 50)))
     (Hot-Ice
      (build Nitrogen-Salt Enriched-Carbon))
+    (Hyperdrive
+     (build (Chromatic-Metal 125) (Microprocessor 5))
     (Ion-Battery
      (build (Cobalt 25) (Ferrite-Dust 20)))
     (Ionised-Cobalt
@@ -314,6 +320,8 @@
      (build Aronium Magno-Gold Grantine))
     (Jetpack
      (build (Ferrite-Dust 100)))
+    (Launch-Thruster
+     (build (Pure-Ferrite 100) Di-hydrogen-Jelly))
     (Lemmium
      (build (Uranium 50) (Pure-Ferrite 100))
      (refine (Uranium 30)
@@ -356,12 +364,16 @@
      (build (Oxygen 25) (Ferrite-Dust 20)))
     (Oxygen-Filter
      (build (Oxygen 90) (Pure-Ferrite 30)))
+    (Photon-Cannon
+     (build (Pure-Ferrite 100) (Sodium-Nitrate 60)))
     (Poly-Fibre
      (build (Cactus-Flesh 100) (Star-Bulb 200)))
     (Portable-Refiner
      (build Metal-Plating (Oxygen 30)))
     (Projectile-Ammo
      (build 500 (Ferrite-Dust 60)))
+    (Pulse-Engine
+     (build Hermetic-Seal Metal-Plating))
     (Quantum-Processor
      (build Circuit-Board Superconductor))
     (Rare-Metal-Element
