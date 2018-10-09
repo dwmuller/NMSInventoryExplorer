@@ -158,8 +158,6 @@
      (refine 4 Emeril Chromatic-Metal))
     (Ferrite-Dust
      (refine (or Paraffinium Dioxite Phosphorus Pyrite (Rusted-Metal 5) Uranium Ammonia)))
-    (Frigate-Fuel-50
-     (build (Di-hydrogen 50) (Tritium 50)))
     (Frost-Crystal
      (build (Dioxite 100) (Chromatic-Metal 25))
      (refine 2 Frost-Crystal Dioxite)
@@ -184,10 +182,6 @@
     (Living-Slime)
     (Magnetised-Ferrite)
     (Marrow-Bulb)
-    (Mineral-Compressor
-     (build Cobalt-Mirror (Gold 50)))
-    (Mind-Control-Device
-     (build Sodium-Diode (Gold 50)))
     (Mordite)
     (Nitrogen)
     (Oxygen)
@@ -302,7 +296,7 @@
     (Herox
      (build (Ammonia 50) (Ionised-Cobalt 50))
      (refine (Ammonia 30)
-             (or (Tritium 20) (Silber 20) (Gold 10) (Platinum 5))
+             (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
              (or (Cobalt 60) (Ionised-Cobalt 30))))
     (Holographic-Analyser
      (build Oxygen-Filter (Gold 50)))
@@ -394,7 +388,7 @@
      (refine (Oxygen 100)(Tritium 50))
      (refine (Oxygen 40)(Tritium 50) (Uranium 50)))
     (TetraCobalt
-     (bild (Ionised-Cobalt 150))
+     (build (Ionised-Cobalt 150))
      (refine (Cobalt 50) (Ionised-Cobalt 50))
      (refine (Cobalt 40) (Ionised-Cobalt 40) (Tritium 50)))
     (Thermic-Condensate

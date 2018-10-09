@@ -99,9 +99,9 @@
     (Dirty-Bronze "ALLOY2")
     (Enriched-Carbon 50000 "REACTION2")
     (Explosive-Drones 75000)
-    (|Frigate-Fuel-(50 Tonnes)| 20000 "FRIGATE_FUEL_1") ; verify
-    (|Frigate-Fuel-(100 Tonnes)| "FRIGATE_FUEL_2")
-    (|Frigate-Fuel-(200 Tonnes)| "FRIGATE_FUEL_3")
+    (|Frigate-Fuel (50 Tonnes)| 20000 "FRIGATE_FUEL_1") ; verify
+    (|Frigate-Fuel (100 Tonnes)| "FRIGATE_FUEL_2")
+    (|Frigate-Fuel (200 Tonnes)| "FRIGATE_FUEL_3")
     (Frost-Crystal "PLANT_SNOW")
     (Fuel-Oxidiser 75000 "FRIG_BOOST_SPD")
     (Fusion-Accelerant "COMPOUND4")

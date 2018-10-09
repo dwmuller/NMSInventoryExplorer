@@ -38,11 +38,11 @@
         (Bq< . Chest10Inventory)
         (\;?C . ChestMagicInventory) ; what is this?
         (fCh . ChestMagic2Inventory) ; what is this?
-        ; array of ships
+        ; list of ships
         ; each with Name, Resource, Inventory, Inventory_TechOnly, InventoryLayout, Location, Position, Direction
         (@Cs . ShipOwnership)
          
-        ; array of vehicles
+        ; list of vehicles
         ; each with TODO
         (P\;m . VehicleOwnership)
 
@@ -134,34 +134,40 @@
       [else
        (inventory-deposit result item amount)])))
 
-(define basic-inventory-paths
-  '(
-   (PlayerStateData Inventory)
-   (PlayerStateData Inventory_Cargo)
-   (PlayerStateData FreighterInventory)
-   (PlayerStateData Chest1Inventory)
-   (PlayerStateData Chest2Inventory)
-   (PlayerStateData Chest3Inventory)
-   (PlayerStateData Chest4Inventory)
-   (PlayerStateData Chest5Inventory)
-   (PlayerStateData Chest6Inventory)
-   (PlayerStateData Chest7Inventory)
-   (PlayerStateData Chest8Inventory)
-   (PlayerStateData Chest9Inventory)
-   (PlayerStateData Chest10Inventory)))
+(define (get-ownership-paths json ownership)
+  (define count (length (get-json-element json 'PlayerStateData ownership)))
+  (for/list ([i (in-range (- count 1))])
+    (list 'PlayerStateData ownership i 'Inventory)))
 
-(define (read-inventory-from-port save-file-port)
-  ; TODO: Currently reads entire gigantic save file with garbled tags.
-  ; TODO: Returns only unprocessed general exosuit inventory.
-  (define json (read-json save-file-port))
-  (define inventory (make-inventory))
+(define (inventory-paths json)
+  (append
+   '(
+     (PlayerStateData Inventory)
+     (PlayerStateData Inventory_Cargo)
+     (PlayerStateData FreighterInventory)
+     (PlayerStateData Chest1Inventory)
+     (PlayerStateData Chest2Inventory)
+     (PlayerStateData Chest3Inventory)
+     (PlayerStateData Chest4Inventory)
+     (PlayerStateData Chest5Inventory)
+     (PlayerStateData Chest6Inventory)
+     (PlayerStateData Chest7Inventory)
+     (PlayerStateData Chest8Inventory)
+     (PlayerStateData Chest9Inventory)
+     (PlayerStateData Chest10Inventory))
+   (get-ownership-paths json 'ShipOwnership)
+   (get-ownership-paths json 'VehicleOwnership)))
+
+(define (gather-inventory-from-save-json json)
   (for/fold ([inventory (make-inventory)])
-            ([path basic-inventory-paths])
+            ([path (inventory-paths json)])
     (add-inventory json path inventory)))
 
+(define (read-save-file path)
+  (call-with-input-file path read-json #:mode 'text))
+
 (define (read-inventory path)
-  (define save-file-path path)
-  (call-with-input-file save-file-path read-inventory-from-port #:mode 'text))
+  (gather-inventory-from-save-json (read-save-file path)))
 
 (define (get-nms-data-path)
   (match (system-type)
