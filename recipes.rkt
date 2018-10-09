@@ -231,8 +231,28 @@
      (refine (Paraffinium 30)
              (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
              (or (Cobalt 60) (Ionised-Cobalt 30))))
+    (AtlasPass-v1
+     (build (Copper 200) Microprocessor))
+    (AtlasPass-v2
+     (build (Cadmium 200) Microprocessor))
+    (AtlasPass-v3
+     (build (Emeril 200) Microprocessor))
+    (Atmosphere-Harvester
+     (build (Ammonia 100) (Metal-Plating 2) (Hermetic-Seal 2)))
+    (Base-Computer
+     (build (Chromatic-Metal 40)))
+    (Beacon
+     (build Metal-Plating (Ion-Battery 2) Microprocessor))
+    (Carbon-Crystal
+     (build (Condensed-Carbon 150))
+     (refine (Carbon 50) (Condensed-Carbon 50))
+     (refine (Carbon 40) (Condensed-Carbon 40) (Tritium 50)))
     (Carbon-Nanotubes
      (build (Carbon 50)))
+    (Chloride-Lattice
+     (build (Chlorine 150))
+     (refine (Salt 50) (Chlorine 50))
+     (refine (Salt 40) (Chlorine 40) (Tritium 50)))
     (Circuit-Board
      (build Heat-Capacitor Poly-Fibre))
     (Cobalt-Mirror
@@ -243,6 +263,11 @@
      (build Living-Glass Cryo-Pump))
     (Di-hydrogen-Jelly
      (build (Di-hydrogen 40)))
+    (Dirty-Bronze
+     (build (Pyrite 50) (Pure-Ferrite 100))
+     (refine (Pyrite 30)
+             (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
+             (or (Ferrite-Dust 120) (Pure-Ferrite 60))))
     (Enriched-Carbon
      (refine
       (Radon 100)
@@ -250,8 +275,16 @@
       (or (Salt 10) (Chlorine 5))))
     (Explosive-Drones
      (build Walker-Brain (Gold 50)))
+    (|Frigate-Fuel (50 Tonnes)|
+     (build (Di-hydrogen 50) (Tritium 50)))
+    (|Frigate-Fuel (100 Tonnes)|
+     (build (Di-hydrogen 100) (Tritium 100)))
+    (|Frigate-Fuel (200 Tonnes)|
+     (build (Di-hydrogen 200) (Tritium 200)))
     (Fuel-Oxidiser
      (build (Quad-Servo 2) (Gold 50)))
+    (Fusion-Accelerant
+     (build Organic-Catalyst Nitrogen-Salt))
     (Geodesite
      (build Dirty-Bronze Herox Lemmium))
     (Glass
@@ -267,17 +300,33 @@
     (Hermetic-Seal
      (build (Carbon 30)))
     (Herox
-     (build (Ammonia 50) (Ionised-Cobalt 50)))
+     (build (Ammonia 50) (Ionised-Cobalt 50))
+     (refine (Ammonia 30)
+             (or (Tritium 20) (Silber 20) (Gold 10) (Platinum 5))
+             (or (Cobalt 60) (Ionised-Cobalt 30))))
     (Holographic-Analyser
      (build Oxygen-Filter (Gold 50)))
     (Hot-Ice
      (build Nitrogen-Salt Enriched-Carbon))
     (Ion-Battery
      (build (Cobalt 25) (Ferrite-Dust 20)))
+    (Ionised-Cobalt
+     (refine (Cobalt 2))
+     (refine 150 TetraCobalt)
+     (refine 6 Ionised-Cobalt (Oxygen 2))
+     (refine 5 (Cobalt 2) (Oxygen 2))
+     (refine 2 Marrow-Bulb (or Pugneum Oxygen Cobalt Ionised-Cobalt)))
     (Iridesite
      (build Aronium Magno-Gold Grantine))
+    (Jetpack
+     (build (Ferrite-Dust 100)))
     (Lemmium
-     (build (Uranium 50) (Pure-Ferrite 100)))
+     (build (Uranium 50) (Pure-Ferrite 100))
+     (refine (Uranium 30)
+             (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
+             (or (Ferrite-Dust 120) (Pure-Ferrite 60))))
+    (Life-Support
+     (build (Ferrite-Dust 100)))
     (Life-Support-Gel
      (build Di-hydrogen-Jelly (Carbon 20)))
     (Liquid-Explosive
@@ -286,6 +335,8 @@
      (build Lubricant (Glass 5)))
     (Lubricant
      (build (Coprite 50) (Gamma-Root 400)))
+    (Magnetised-Ferrite
+     (refine (Pure-Ferrite 2)))
     (Magno-Gold
      (build (Phosphorus 50) (Ionised-Cobalt 50))
      (refine (Phosphorus 30)
@@ -295,6 +346,10 @@
      (build (Ferrite-Dust 50)))
     (Microprocessor
      (build (Chromatic-Metal 40) Carbon-Nanotubes))
+    (Mind-Control-Device
+     (build Sodium-Diode (Gold 50)))
+    (Mineral-Compressor
+     (build Cobalt-Mirror (Gold 50)))
     (Nitrogen-Salt
      (build (Nitrogen 250) (Condensed-Carbon 50))
      (refine
@@ -309,14 +364,23 @@
      (build (Oxygen 90) (Pure-Ferrite 30)))
     (Poly-Fibre
      (build (Cactus-Flesh 100) (Star-Bulb 200)))
+    (Portable-Refiner
+     (build Metal-Plating (Oxygen 30)))
     (Projectile-Ammo
      (build 500 (Ferrite-Dust 60)))
     (Quantum-Processor
      (build Circuit-Board Superconductor))
+    (Rare-Metal-Element
+     (build (Pure-Ferrite 150))
+     (refine (Magnetised-Ferrite 35) (Pure-Ferrite 35) (Ferrite-Dust 35))
+     (refine (Magnetised-Ferrite 25) (Oxygen 50))
+     (refine (Magnetised-Ferrite 20) (Oxygen 20) (Tritium 25)))
     (Salt-Refractor
      (build (Chlorine 50)))
     (Semiconductor
      (build Thermic-Condensate Nitrogen-Salt))
+    (Signal-Booster
+     (build Metal-Plating Carbon-Nanotubes (Sodium 15)))
     (Sodium-Diode
      (build (Sodium-Nitrate 40) (Ferrite-Dust 40)))
     (Starship-Launch-Fuel
@@ -325,7 +389,16 @@
      (build Quantum-Processor Cryogenic-Chamber Iridesite))
     (Superconductor
      (build Semiconductor Enriched-Carbon))
+    (Superoxide-Crystal
+     (build (Oxygen 15))
+     (refine (Oxygen 100)(Tritium 50))
+     (refine (Oxygen 40)(Tritium 50) (Uranium 50)))
+    (TetraCobalt
+     (bild (Ionised-Cobalt 150))
+     (refine (Cobalt 50) (Ionised-Cobalt 50))
+     (refine (Cobalt 40) (Ionised-Cobalt 40) (Tritium 50)))
     (Thermic-Condensate
+     (build (Sulphurine 250) (Condensed-Carbon 50))
      (refine
       (Sulphurine 100)
       (or (Carbon 20) (Condensed-Carbon 10))
