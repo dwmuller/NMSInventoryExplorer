@@ -81,7 +81,7 @@
     (hash-set! recipes-by-output output recipes))
   (for ((r recipes))
     (for ((i (map car (recipe$-inputs r))))
-      (hash-update! recipes-by-input i (λ (cur) (list* r cur)) '())))) 
+      (hash-update! recipes-by-input i (λ (cur) (list* r cur)) '()))))
 
 (define raw-recipes
   '(
@@ -307,7 +307,7 @@
     (Hot-Ice
      (build Nitrogen-Salt Enriched-Carbon))
     (Hyperdrive
-     (build (Chromatic-Metal 125) (Microprocessor 5))
+     (build (Chromatic-Metal 125) (Microprocessor 5)))
     (Ion-Battery
      (build (Cobalt 25) (Ferrite-Dust 20)))
     (Ionised-Cobalt

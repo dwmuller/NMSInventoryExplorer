@@ -168,6 +168,7 @@
     (Stasis-Device 15600000)
     (Superconductor 1500000 "COMPOUND5")
     (Superoxide-Crystal "OXYPROD3")
+    (Technology-Module)
     (TetraCobalt "CAVEPROD3")
     (Thermic-Condensate 50000 "REACTION1")
     (Unstable-Gel 50000)
@@ -193,7 +194,10 @@
 
 
 (define (get-item name)
-  (hash-ref items name))
+  (define result (hash-ref items name #f))
+  (unless result
+    (raise-argument-error 'get-item "defined item name symbol" name))
+  result)
 
 (define item-by-save-id (make-hash
                          (for/list ([i (hash-values items)]
@@ -202,7 +206,7 @@
 
 (define (get-item-by-save-id id [default (void)])
   (define match (regexp-match "^\\^([^#]+)(#[0-9]+)?" id))
-  (unless match (raise-argument-error 'bad-save-id "^id(#num)?" id))
+  (unless match (raise-argument-error 'get-item-by-save-id "item save identifier in form ^id(#num)?" id))
   (define key (second match))
   (hash-ref item-by-save-id key default))
 

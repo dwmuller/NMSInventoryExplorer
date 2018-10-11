@@ -2,12 +2,14 @@
 
 (require data/heap)
 (require racket/generator)
-(require racket/pretty)
 
 (require "items.rkt"
          "recipes.rkt"
          "utility.rkt"
          "inventory.rkt")
+
+(provide get-best-recipe-sequence
+         display-best-recipe-sequence) 
 
 ;;; State
 ;;;
@@ -33,9 +35,7 @@
   #:transparent)
 
 (define (make-state recipe-applications deficit initial)
-  (define s (state recipe-applications deficit))
-;  (pretty-display s) (newline)
-  s)
+  (state recipe-applications deficit))
 
 (define (state-closed? s)
   (inventory-empty? (state-deficit s)))
@@ -167,26 +167,21 @@
   (values (state-recipe-applications best)
           (state-deficit best)))
 
-(require racket/trace)
-;(trace make-state)
-;(trace make-inventory)
-;(trace state-closed?)
-;(trace expand-state)
-;(trace state)
-
 ;;; Display functions for development
-(define (display-recipe-application r num)
+(define (display-recipe-application app)
+  (define r (car app))
+  (define num (cdr app))
   (printf "~s X ~s:~n" (recipe$-action r) num)
   (for ([i (recipe$-inputs r)])
     (printf "  ~v ~v~n" (* num (cdr i)) (item$-name (car i))))
   (printf "  -> ~v ~v~n" (* num (recipe$-count r)) (item$-name (recipe$-output r))))
   
 (define (display-recipe-applications recipe-applications)
-  (for ([r recipe-applications])
-    (display-recipe-application (car r) (cdr r))))
+  (for ([a recipe-applications])
+    (display-recipe-application a)))
 
-(define (display-best-recipe-sequence  item-name num inventory-forms)
-  (define initial-inventory (apply make-inventory (map canonicalize-input-form inventory-forms)))
+(define (display-best-recipe-sequence  item-name num inventory)
+  (define initial-inventory inventory)
   (define-values (s i) (get-best-recipe-sequence (get-item item-name) num initial-inventory))
   (display-recipe-applications s)
   (display i))
