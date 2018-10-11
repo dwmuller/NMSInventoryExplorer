@@ -4,7 +4,8 @@
 (require "items.rkt"
          "inventory.rkt")
 
-(provide get-latest-game-save-file-path
+(provide get-default-data-path
+         get-latest-save-file-path
          read-inventory)
 
 ; JSON nodes containing inventory slots:
@@ -169,7 +170,7 @@
 (define (read-inventory path)
   (gather-inventory-from-save-json (read-save-file path)))
 
-(define (get-nms-data-path)
+(define (get-default-data-path)
   (match (system-type)
     ['windows
      (define nms (build-path (getenv "APPDATA") "HelloGames/NMS"))
@@ -177,11 +178,11 @@
        (raise-result-error 'nms-base-dir-not-found "existing directory"))
      nms]))
 
-(define (get-latest-game-save-file-path)
+(define (get-latest-save-file-path [data-root (get-default-data-path)])
   (for*/fold ([best-file (void)]
               [best-date (void)]
               #:result best-file)
-             ([sub (directory-list (get-nms-data-path) #:build? #t)]
+             ([sub (directory-list data-root #:build? #t)]
               #:when (directory-exists? sub)
               [file (directory-list sub #:build? #f)])
     (define file-path (build-path sub file))
