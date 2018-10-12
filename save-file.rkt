@@ -4,23 +4,38 @@
 (require "items.rkt"
          "inventory.rkt")
 
-(provide get-default-data-path
+(provide (struct-out save-file-data)
+         get-default-data-path
          get-latest-save-file-path
-         read-inventory)
+         get-save-file-data)
 
-; JSON nodes containing inventory slots:
-; Exosuit General: PlayerStateData.Inventory
-; Exosuit Cargo: PlayerStateData.Inventory_Cargo
-; Freighter general: PlayerStateData.FreighterInventory
-; Container inventory: PlayerStateData.ChestXInventory (where X is container number, 1-10)
+;;;
+;;; A struct representing the data that we snarfed from a save file.
+;;;
+;;; Contains only those parts that we need.
+;;;
+(struct save-file-data
+  (general-inventory
+   cargo-inventory
+   freighter-inventory
+   starship-inventories
+   vehicle-inventories
+   storage-inventories
 
+   starships
+   vehicles)
+  #:transparent)
+
+; TODO:
 ; Primary ship index: PlayerStateData.PrimaryShip
 ; Primary vehicle index: PlayerStateData.PrimaryVehicle
-;
 
-
-;PrimaryVehicleNode.Inventory
-
+;;;
+;;; Mapping of JSON tags to old-style tag names, both represented as symbols.
+;;;
+;;; Contains those mappings needed to retrieve inventories, plus others
+;;; that I happened to figure out while dumpster-diving in the save file.
+;;;
 (define json-tag-to-name
   #hash((F2P . Version)
         (8>q . Platform)
@@ -117,11 +132,11 @@
 
 (define save-file-name-regexp (regexp "^save[0-9]*.hg"))
 
-(define (add-inventory json path inventory)
+(define (json->inventory json path)
   (define slots (apply get-json-element json (append path '(Slots))))
+  (define inventory (make-inventory))
   ; TODO
-  ; Need mapping of internal item name to symbol. Add to items.rkt.
-  ; Filter out tech (maybe just by -1 amount) and empty slots.
+  ; Filter out installed tech? (Maybe just by -1 amount?)
   (for/fold ([result inventory])
             ([slot slots])
     (define amount (get-json-element slot 'Amount))
@@ -135,40 +150,58 @@
       [else
        (inventory-deposit result item amount)])))
 
-(define (get-ownership-paths json ownership)
-  (define count (length (get-json-element json 'PlayerStateData ownership)))
-  (for/list ([i (in-range (- count 1))])
-    (list 'PlayerStateData ownership i 'Inventory)))
+(define (json->chest-inventories json)
+  (for/vector ([i (in-range 10)])
+    (define name (string->symbol (format "Chest~sInventory" (+ 1 i))))
+    (json->inventory json (list 'PlayerStateData name))))
 
-(define (inventory-paths json)
-  (append
-   '(
-     (PlayerStateData Inventory)
-     (PlayerStateData Inventory_Cargo)
-     (PlayerStateData FreighterInventory)
-     (PlayerStateData Chest1Inventory)
-     (PlayerStateData Chest2Inventory)
-     (PlayerStateData Chest3Inventory)
-     (PlayerStateData Chest4Inventory)
-     (PlayerStateData Chest5Inventory)
-     (PlayerStateData Chest6Inventory)
-     (PlayerStateData Chest7Inventory)
-     (PlayerStateData Chest8Inventory)
-     (PlayerStateData Chest9Inventory)
-     (PlayerStateData Chest10Inventory))
-   (get-ownership-paths json 'ShipOwnership)
-   (get-ownership-paths json 'VehicleOwnership)))
+(define (json->ship-inventories json)
+  (define count (length (get-json-element json 'PlayerStateData 'ShipOwnership)))
+  (for/vector ([i (in-range (- count 1))])
+    (define filename (get-json-element json 'PlayerStateData 'ShipOwnership i 'Resource 'Filename))
+    #:break (not (non-empty-string? filename))
+    (json->inventory json (list 'PlayerStateData 'ShipOwnership i 'Inventory))))
 
-(define (gather-inventory-from-save-json json)
-  (for/fold ([inventory (make-inventory)])
-            ([path (inventory-paths json)])
-    (add-inventory json path inventory)))
+(define (json->vehicle-inventories json)
+  (define count (length (get-json-element json 'PlayerStateData 'VehicleOwnership)))
+  (for/vector ([i (in-range (- count 1))])
+    (json->inventory json (list 'PlayerStateData 'VehicleOwnership i 'Inventory))))
 
-(define (read-save-file path)
-  (call-with-input-file path read-json #:mode 'text))
-
-(define (read-inventory path)
-  (gather-inventory-from-save-json (read-save-file path)))
+(define (json->ships json)
+  (define count (length (get-json-element json 'PlayerStateData 'ShipOwnership)))
+  (for/vector ([i (in-range (- count 1))])
+    (define filename (get-json-element json 'PlayerStateData 'ShipOwnership i 'Resource 'Filename))
+    #:break (not (non-empty-string? filename))
+    (define name (get-json-element json 'PlayerStateData 'ShipOwnership i 'Name))
+    (cond
+      [(non-empty-string? name) name]
+      [else
+       ; Best we can do is determine the ship type.
+       (format "~s ~s"
+               i
+               (match filename
+                 ["MODELS/COMMON/SPACECRAFT/DROPSHIPS/DROPSHIP_PROC.SCENE.MBIN" "Hauler"]
+                 ["MODELS/COMMON/SPACECRAFT/FIGHTERS/FIGHTER_PROC.SCENE.MBIN" "Fighter"]
+                 ["MODELS/COMMON/SPACECRAFT/SCIENTIFIC/SCIENTIFIC_PROC.SCENE.MBIN" "Explorer"]
+                 ["MODELS/COMMON/SPACECRAFT/SHUTTLE/SHUTTLE_PROC.SCENE.MBIN" "Shuttle"]
+                 ["MODELS/COMMON/SPACECRAFT/S-CLASS/S-CLASS_PROC.SCENE.MBIN" "Exotic"]))])))
+  
+(define (json->vehicles json)
+  ; TODO: Don't actually know how to tell if a vehicle slot is empty.
+  ; Also not sure if they always appear in this order.
+  #["Roamer" "Nomad" "Colossus"])
+  
+(define (get-save-file-data save-file-path)
+  (define json (call-with-input-file save-file-path read-json #:mode 'text))
+  (save-file-data
+   (json->inventory json '(PlayerStateData Inventory))
+   (json->inventory json '(PlayerStateData Inventory_Cargo))
+   (json->inventory json '(PlayerStateData FreighterInventory))
+   (json->chest-inventories json)
+   (json->ship-inventories json)
+   (json->vehicle-inventories json)
+   (json->ships json)
+   (json->vehicles json)))
 
 (define (get-default-data-path)
   (match (system-type)
@@ -194,5 +227,7 @@
            (values best-file best-date))]
       [else
        (values best-file best-date)])))
+
+  
    
 
