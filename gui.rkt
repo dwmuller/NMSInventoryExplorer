@@ -1,10 +1,38 @@
 #lang racket/gui
 
 (require racket/gui/base
-         racket/path)
+         racket/path
+         framework
+         table-panel)
 
-(require "save-file.rkt")
+(require "save-file.rkt"
+         "items.rkt"
+         "inventory.rkt")
 
+;;;
+;;; Support data and functions
+;;;
+(define current (get-game-inventories (get-latest-save-file-path)))
+
+(define (get-inventory-choices)
+  (append (list (cons "Exosuit General" (game-inventories-exosuit-general current))
+                (cons "Exosuit Cargo"   (game-inventories-exosuit-cargo current))
+                (cons "Freighter"       (game-inventories-freighter current)))
+          (for/list ([s (game-inventories-starships current)]
+                     [i (game-inventories-starship-inventories current)])
+            (cons s i))
+          (for/list ([s (game-inventories-vehicles current)]
+                     [i (game-inventories-vehicle-inventories current)])
+            (cons s i))
+          (for/list ([n (in-naturals)]
+                     [i (game-inventories-storage-inventories current)])
+            (cons (format "Storage ~s" n) i)))) 
+            
+                  
+
+;;;
+;;; Window definitions
+;;;
 (define frame
   (new frame%
        [label "No Man's Sky Inventory Explorer"]
@@ -13,7 +41,8 @@
 (define file-selection
   (new group-box-panel%
        [parent frame]
-       [label "Save File"]))
+       [label "Save File"]
+       [stretchable-height #f]))
 (define data-root
   (new text-field%
        [parent file-selection]
@@ -46,17 +75,17 @@
                     [parent inventory-selection]
                     [label "Inventories"])]))
 
-(define general-inventory
+(define exosuit-general
   (new check-box%
        [parent basic-inventories]
        [label "Exosuit General"]
        [value #t]))
-(define cargo-inventory
+(define exosuit-cargo
   (new check-box%
        [parent basic-inventories]
        [label "Exosuit Cargo"]
        [value #t]))
-(define freighter-inventory
+(define freighter
   (new check-box%
        [parent basic-inventories]
        [label "Freighter"]
@@ -66,7 +95,7 @@
 ;;; Adds "All" and "None" buttons to panels that display
 ;;; a sequence of checkboxes.
 ;;; 
-(define (add-quick-buttons parent checkboxes)
+(define (add-quick-buttons! parent checkboxes)
   (define container
     (new horizontal-panel% [parent parent] [alignment '(center top)]))
   (new button%
@@ -80,7 +109,8 @@
        [label "None"]
        [callback (λ (b e)
                    (for ([c checkboxes])
-                     (send c set-value #f)))]))
+                     (send c set-value #f)))])
+  (void))
   
 (define vessels (new horizontal-pane% [parent inventory-selection]))
 
@@ -94,7 +124,7 @@
     (new check-box%
          [parent ships-area]
          [label (number->string i)])))
-(add-quick-buttons ships-area ships)
+(add-quick-buttons! ships-area ships)
 
 (define vehicles-area
   (new group-box-panel%
@@ -106,7 +136,7 @@
     (new check-box%
          [parent vehicles-area]
          [label (number->string i)])))
-(add-quick-buttons vehicles-area vehicles)
+(add-quick-buttons! vehicles-area vehicles)
 
 (define storage-boxes-area
   (new group-box-panel% [parent inventory-selection]
@@ -121,22 +151,71 @@
     (new check-box%
          [parent (if (< i 5) storage-boxes-left storage-boxes-right)]
          [label (format "Storage ~s" i)])))
-(add-quick-buttons storage-boxes-area storage-boxes)
+(add-quick-buttons! storage-boxes-area storage-boxes)
 
 
 ;;;
 ;;; The working bits, in a tabbed area.
 ;;;
+(define (show-inventory-in-table-panel inventory table)
+  #;(send table enable #f)
+  ; NOTE WELL: set-dimensions is documented as taking rows, cols - BUT
+  ; ACTUALLY TAKES cols, rows!
+  (send table set-dimensions 2 (max 1 (hash-count inventory)))
+  (send table change-children (λ (ignored) '()))
+  (for ([key (sort (hash-keys inventory) symbol<? #:key item$-name)])
+    (new message%
+         [parent (new panel% [parent table] [alignment '(right center)])]
+         [label (number->string (inventory-available inventory key))])
+    (new message%
+         [parent (new panel% [parent table] [alignment '(left center)])]
+         [label (symbol->string (item$-name key))]))
+  #;(send table enable #t))
+
+
 (define tab-area
   (new tab-panel%
        [parent main-panel]
-       [choices '("Totals" "Details" "Craft" "Suggest")]))
+       [choices '("Inventories" "Totals" "Craft" "Suggest")]))
 
-(define totals
-  (new horizontal-panel%
-       [parent tab-area]))
+(define tab-data-area
+  (new panel:single% [parent tab-area]))
 
-  
+(define inventories
+  (new vertical-panel%
+       [parent tab-data-area]
+       [style '(vscroll)]))
+(define inventory-choices (get-inventory-choices))
+(define inventory-choice
+  (new choice%
+       [parent inventories]
+       [label "Inventory:"]
+       [choices (map car inventory-choices)]
+       [callback (λ (c . ignored)
+                   (show-selected-inventory))]))
+(define inventory-data-panel
+  (new table-panel%
+       [parent inventories]
+       [column-stretchability #f]
+       [row-stretchability #f]))
+
+(define (set-inventory-choices!)
+  (send inventory-choice clear)
+  (for ([i (map car inventory-choices)])
+    (send inventory-choice append i))
+  (send inventory-choice set-selection 0))
+
+(define (show-selected-inventory)
+  (show-inventory-in-table-panel
+   (cdr (sequence-ref inventory-choices (send inventory-choice get-selection)))
+   inventory-data-panel))
+
+(set-inventory-choices!)
+(show-selected-inventory)
+
+;(send tab-data-area active-child inventories)
+
+          
 
 (send frame show #t)
 

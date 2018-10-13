@@ -4,20 +4,23 @@
 (require "items.rkt"
          "inventory.rkt")
 
-(provide (struct-out save-file-data)
+(provide (struct-out game-inventories)
          get-default-data-path
          get-latest-save-file-path
-         get-save-file-data)
+         get-game-inventories)
 
 ;;;
 ;;; A struct representing the data that we snarfed from a save file.
 ;;;
 ;;; Contains only those parts that we need.
 ;;;
-(struct save-file-data
-  (general-inventory
-   cargo-inventory
-   freighter-inventory
+(struct game-inventories
+  (path
+   modify-seconds      ; Time when file was last modified
+
+   exosuit-general
+   exosuit-cargo
+   freighter
    starship-inventories
    vehicle-inventories
    storage-inventories
@@ -177,7 +180,7 @@
       [(non-empty-string? name) name]
       [else
        ; Best we can do is determine the ship type.
-       (format "~s ~s"
+       (format "~a ~a"
                i
                (match filename
                  ["MODELS/COMMON/SPACECRAFT/DROPSHIPS/DROPSHIP_PROC.SCENE.MBIN" "Hauler"]
@@ -191,17 +194,19 @@
   ; Also not sure if they always appear in this order.
   #["Roamer" "Nomad" "Colossus"])
   
-(define (get-save-file-data save-file-path)
+(define (get-game-inventories save-file-path)
+  (define modify-seconds (file-or-directory-modify-seconds save-file-path))
   (define json (call-with-input-file save-file-path read-json #:mode 'text))
-  (save-file-data
-   (json->inventory json '(PlayerStateData Inventory))
-   (json->inventory json '(PlayerStateData Inventory_Cargo))
-   (json->inventory json '(PlayerStateData FreighterInventory))
-   (json->chest-inventories json)
-   (json->ship-inventories json)
-   (json->vehicle-inventories json)
-   (json->ships json)
-   (json->vehicles json)))
+  (game-inventories save-file-path
+                  modify-seconds
+                  (json->inventory json '(PlayerStateData Inventory))
+                  (json->inventory json '(PlayerStateData Inventory_Cargo))
+                  (json->inventory json '(PlayerStateData FreighterInventory))
+                  (json->chest-inventories json)
+                  (json->ship-inventories json)
+                  (json->chest-inventories json)
+                  (json->ships json)
+                  (json->vehicles json)))
 
 (define (get-default-data-path)
   (match (system-type)
