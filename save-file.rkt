@@ -25,6 +25,8 @@
    vehicle-inventories
    storage-inventories
 
+   inventories
+   
    starships
    vehicles)
   #:transparent)
@@ -160,53 +162,86 @@
 
 (define (json->ship-inventories json)
   (define count (length (get-json-element json 'PlayerStateData 'ShipOwnership)))
-  (for/vector ([i (in-range (- count 1))])
-    (define filename (get-json-element json 'PlayerStateData 'ShipOwnership i 'Resource 'Filename))
-    #:break (not (non-empty-string? filename))
-    (json->inventory json (list 'PlayerStateData 'ShipOwnership i 'Inventory))))
+  (reverse
+   (for/fold ([result null])
+             ([i (in-range (- count 1))])
+     (define filename (get-json-element json 'PlayerStateData 'ShipOwnership i 'Resource 'Filename))
+     (if (non-empty-string? filename)
+         (cons (json->inventory json (list 'PlayerStateData 'ShipOwnership i 'Inventory)) result)
+         result))))
 
 (define (json->vehicle-inventories json)
   (define count (length (get-json-element json 'PlayerStateData 'VehicleOwnership)))
-  (for/vector ([i (in-range (- count 1))])
+  (for/list ([i (in-range count)])
     (json->inventory json (list 'PlayerStateData 'VehicleOwnership i 'Inventory))))
 
 (define (json->ships json)
-  (define count (length (get-json-element json 'PlayerStateData 'ShipOwnership)))
-  (for/vector ([i (in-range (- count 1))])
-    (define filename (get-json-element json 'PlayerStateData 'ShipOwnership i 'Resource 'Filename))
-    #:break (not (non-empty-string? filename))
-    (define name (get-json-element json 'PlayerStateData 'ShipOwnership i 'Name))
-    (cond
-      [(non-empty-string? name) name]
-      [else
-       ; Best we can do is determine the ship type.
-       (format "~a ~a"
-               i
-               (match filename
-                 ["MODELS/COMMON/SPACECRAFT/DROPSHIPS/DROPSHIP_PROC.SCENE.MBIN" "Hauler"]
-                 ["MODELS/COMMON/SPACECRAFT/FIGHTERS/FIGHTER_PROC.SCENE.MBIN" "Fighter"]
-                 ["MODELS/COMMON/SPACECRAFT/SCIENTIFIC/SCIENTIFIC_PROC.SCENE.MBIN" "Explorer"]
-                 ["MODELS/COMMON/SPACECRAFT/SHUTTLE/SHUTTLE_PROC.SCENE.MBIN" "Shuttle"]
-                 ["MODELS/COMMON/SPACECRAFT/S-CLASS/S-CLASS_PROC.SCENE.MBIN" "Exotic"]))])))
+  (define ships-json (get-json-element json 'PlayerStateData 'ShipOwnership))
+  (reverse
+   (for/fold ([result null])
+             ([ship ships-json]
+              [i (in-naturals)])
+     (define filename (get-json-element ship 'Resource 'Filename))
+     (define name (get-json-element ship 'Name))
+     (cond
+       [(non-empty-string? name) (cons name result)]
+       [(non-empty-string? filename)
+        (cons
+         ; Best we can do right now is determine the ship type.
+         (format "~a (~a)"
+                 (match filename
+                   ["MODELS/COMMON/SPACECRAFT/DROPSHIPS/DROPSHIP_PROC.SCENE.MBIN" "Hauler"]
+                   ["MODELS/COMMON/SPACECRAFT/FIGHTERS/FIGHTER_PROC.SCENE.MBIN" "Fighter"]
+                   ["MODELS/COMMON/SPACECRAFT/SCIENTIFIC/SCIENTIFIC_PROC.SCENE.MBIN" "Explorer"]
+                   ["MODELS/COMMON/SPACECRAFT/SHUTTLE/SHUTTLE_PROC.SCENE.MBIN" "Shuttle"]
+                   ["MODELS/COMMON/SPACECRAFT/S-CLASS/S-CLASS_PROC.SCENE.MBIN" "Exotic"])
+                 i)
+         result)]
+       [else
+        ; Appears to be an unused slot.
+        result]))))
   
 (define (json->vehicles json)
   ; TODO: Don't actually know how to tell if a vehicle slot is empty.
-  ; Also not sure if they always appear in this order.
-  #["Roamer" "Nomad" "Colossus"])
+  ; Also not sure if they always appear in the order expected by the default list below.
+  (define vehicles-json (get-json-element json 'PlayerStateData 'VehicleOwnership))
+  (for/list ([vehicle vehicles-json]
+             [default-name #["Roamer" "Nomad" "Colossus"]])
+    (define name (get-json-element vehicle 'Name))
+    (cond
+      [(non-empty-string? name) name]
+      [else default-name])))
   
+(define (get-keyed-inventories json)
+  (append
+   (list
+    (cons '(exosuit . 0)    (json->inventory json '(PlayerStateData Inventory)))
+    (cons '(exosuit . 1)    (json->inventory json '(PlayerStateData Inventory_Cargo)))
+    (cons '(freighter . 0)  (json->inventory json '(PlayerStateData FreighterInventory))))
+   (for/list ([n (in-naturals)]
+              [i (json->ship-inventories json)])
+     (cons (cons 'ship n) i))
+   (for/list ([n (in-naturals)]
+              [i (json->vehicle-inventories json)])
+     (cons (cons 'vehicle n) i))
+   (for/list ([n (in-naturals)]
+              [i (json->chest-inventories json)])
+     (cons (cons 'chest n) i))))
+
 (define (get-game-inventories save-file-path)
   (define modify-seconds (file-or-directory-modify-seconds save-file-path))
   (define json (call-with-input-file save-file-path read-json #:mode 'text))
   (game-inventories save-file-path
-                  modify-seconds
-                  (json->inventory json '(PlayerStateData Inventory))
-                  (json->inventory json '(PlayerStateData Inventory_Cargo))
-                  (json->inventory json '(PlayerStateData FreighterInventory))
-                  (json->chest-inventories json)
-                  (json->ship-inventories json)
-                  (json->chest-inventories json)
-                  (json->ships json)
-                  (json->vehicles json)))
+                    modify-seconds
+                    (json->inventory json '(PlayerStateData Inventory))
+                    (json->inventory json '(PlayerStateData Inventory_Cargo))
+                    (json->inventory json '(PlayerStateData FreighterInventory))
+                    (json->ship-inventories json)
+                    (json->vehicle-inventories json)
+                    (json->chest-inventories json)
+                    (get-keyed-inventories json)
+                    (json->ships json)
+                    (json->vehicles json)))
 
 (define (get-default-data-path)
   (match (system-type)
