@@ -18,14 +18,15 @@
          inventory-set
          inventory-shortfall
          inventory-withdraw+unsatisfied
-         inventory-empty?)
+         inventory-empty?
+         merge-inventories)
 
 ;;; Inventory functions
 (define (make-inventory . assoc-list)
   (make-immutable-hasheq (filter (λ (m) (not (zero? (cdr m)))) assoc-list)))
 
-(define (inventory-available inventory item)
-  (hash-ref inventory item 0))
+(define (inventory-available inventory item [default 0])
+  (hash-ref inventory item default))
 
 (define (inventory-deposit inventory item count)
   (if (zero? count)
@@ -58,5 +59,11 @@
 
 (define (inventory-empty? inventory)
   (zero? (hash-count inventory)))
+
+(define (merge-inventories a b)
+  (for/fold ([result a])
+            ([(key value) b])
+    (inventory-deposit result key value)))
+
 
 
