@@ -4,26 +4,19 @@
 (require "items.rkt"
          "inventory.rkt")
 
-(provide (struct-out game-inventories)
+(provide (struct-out game-data)
          get-default-data-path
          get-latest-save-file-path
-         get-game-inventories)
+         get-game-data)
 
 ;;;
 ;;; A struct representing the data that we snarfed from a save file.
 ;;;
 ;;; Contains only those parts that we need.
 ;;;
-(struct game-inventories
+(struct game-data
   (path
    modify-seconds      ; Time when file was last modified
-
-   exosuit-general
-   exosuit-cargo
-   freighter
-   starship-inventories
-   vehicle-inventories
-   storage-inventories
 
    inventories
    
@@ -228,20 +221,14 @@
               [i (json->chest-inventories json)])
      (cons (cons 'chest n) i))))
 
-(define (get-game-inventories save-file-path)
+(define (get-game-data save-file-path)
   (define modify-seconds (file-or-directory-modify-seconds save-file-path))
   (define json (call-with-input-file save-file-path read-json #:mode 'text))
-  (game-inventories save-file-path
-                    modify-seconds
-                    (json->inventory json '(PlayerStateData Inventory))
-                    (json->inventory json '(PlayerStateData Inventory_Cargo))
-                    (json->inventory json '(PlayerStateData FreighterInventory))
-                    (json->ship-inventories json)
-                    (json->vehicle-inventories json)
-                    (json->chest-inventories json)
-                    (get-keyed-inventories json)
-                    (json->ships json)
-                    (json->vehicles json)))
+  (game-data save-file-path
+             modify-seconds
+             (get-keyed-inventories json)
+             (json->ships json)
+             (json->vehicles json)))
 
 (define (get-default-data-path)
   (match (system-type)

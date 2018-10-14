@@ -31,8 +31,8 @@
                 [1 "Exosuit Cargo"])]
     ['freighter (match (cdr key)
                   [0 "Freighter"])]
-    ['ship    (list-ref (game-inventories-starships current) (cdr key))]
-    ['vehicle (list-ref (game-inventories-vehicles current) (cdr key))]
+    ['ship    (list-ref (game-data-starships current) (cdr key))]
+    ['vehicle (list-ref (game-data-vehicles current) (cdr key))]
     ['chest   (format "Storage ~a" (cdr key))]))
 
 (define (item->label item)
@@ -118,8 +118,8 @@
     (merge-inventories result (cdr (assoc key keyed-inventories)))))
 
 (define (load-data! path)
-  (set! current (get-game-inventories path))
-  (set! keyed-inventories (game-inventories-inventories current))
+  (set! current (get-game-data path))
+  (set! keyed-inventories (game-data-inventories current))
   (set! total-of-selected-inventories (calc-totals-inventory))
   (update-inventory-check-boxes! ship-check-boxes (available-keys-for 'ship))
   (update-inventory-check-boxes! vehicle-check-boxes (available-keys-for 'vehicle))
