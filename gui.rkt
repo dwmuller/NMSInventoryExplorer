@@ -39,6 +39,10 @@
   ;; TODO: Prettify item name.
   (symbol->string (item$-name item)))
 
+(define (inventory-selection-changed . ignored)
+  (set! total-of-selected-inventories (calc-totals-inventory))
+  (show-inventory-content-in-table-panel inventory-header-panel inventory-data-panel))
+
 ;;;
 ;;; Checkbox class that also stores an inventory key to indicate
 ;;; the inventory that it relates to. 
@@ -47,7 +51,8 @@
   (class check-box%
     (init inventory-key)
     (define key inventory-key)
-    (super-new [label (inventory-key->label key)])
+    (super-new [label (inventory-key->label key)]
+               [callback inventory-selection-changed])
     (define/public (get-inventory-key) key)))
 
 ;;;
@@ -65,22 +70,35 @@
 (define (add-quick-check-box-buttons! parent check-box-container)
   (define container
     (new horizontal-panel% [parent parent] [alignment '(center top)]))
+  (define (all-true . ignored)
+    (define changed
+      (for/fold ([result #f])
+                ([c (send check-box-container get-children)]
+                 #:when (is-a? c check-box%))
+        (define value (send c get-value))
+        (send c set-value #t)
+        (or result (not value))
+        ))
+    (when changed 
+      (inventory-selection-changed)))
+  (define (all-false . ignored)
+    (define changed
+      (for/fold ([result #f])
+                ([c (send check-box-container get-children)]
+                 #:when (is-a? c check-box%))
+        (define value (send c get-value))
+        (send c set-value #f)
+        (or result value)))
+    (when changed 
+      (inventory-selection-changed)))
   (new button%
        [parent container]
        [label "All"]
-       [callback (λ (b e)
-                   (for ([c (send check-box-container get-children)]
-                         #:when (is-a? c check-box%))
-                     (send c set-value #t))
-                   (inventory-selection-changed))])
+       [callback all-true])
   (new button%
        [parent container]
        [label "None"]
-       [callback (λ (b e)
-                   (for ([c (send check-box-container get-children)]
-                         #:when (is-a? c check-box%))
-                     (send c set-value #f)
-                     (inventory-selection-changed)))])
+       [callback all-false])
   (void))
   
 (define (update-inventory-check-boxes! container available-keys)
@@ -94,8 +112,7 @@
                 child
                 (new inventory-check-box%
                      [parent container]
-                     [inventory-key key]
-                     [callback inventory-selection-changed]))))))
+                     [inventory-key key]))))))
 
 (define (available-inventory-keys) (map car keyed-inventories))
 
@@ -120,18 +137,14 @@
 (define (load-data! path)
   (set! current (get-game-data path))
   (set! keyed-inventories (game-data-inventories current))
-  (set! total-of-selected-inventories (calc-totals-inventory))
   (update-inventory-check-boxes! ship-check-boxes (available-keys-for 'ship))
   (update-inventory-check-boxes! vehicle-check-boxes (available-keys-for 'vehicle))
   (update-inventory-check-boxes! chest-check-boxes (available-keys-for 'chest))
-  (show-inventory-content-in-table-panel inventory-header-panel inventory-data-panel)
-  )
-
-(define (inventory-selection-changed . ignored)
-  (set! total-of-selected-inventories (calc-totals-inventory))
-  (show-inventory-content-in-table-panel inventory-header-panel inventory-data-panel))
+  (inventory-selection-changed))
 
 (define (show-inventory-content-in-table-panel header table)
+  
+  ; This, and the matching end later, is critical for performance:
   (send inventories begin-container-sequence)
   ;
   ; Note: For a child to be deletable, it must implement window<%>, so
@@ -244,18 +257,15 @@
 (define exosuit-general
   (new inventory-check-box%
        [parent basic-inventories-check-boxes]
-       [inventory-key '(exosuit . 0)]
-       [callback inventory-selection-changed]))
+       [inventory-key '(exosuit . 0)]))
 (define exosuit-cargo
   (new inventory-check-box%
        [parent basic-inventories-check-boxes]
-       [inventory-key '(exosuit . 1)]
-       [callback inventory-selection-changed]))
+       [inventory-key '(exosuit . 1)]))
 (define freighter
   (new inventory-check-box%
        [parent basic-inventories-check-boxes]
-       [inventory-key '(freighter . 0)]
-       [callback inventory-selection-changed]))
+       [inventory-key '(freighter . 0)]))
 (add-quick-check-box-buttons! basic-inventories-selections basic-inventories-check-boxes)
 (send exosuit-general set-value #t)
 (send exosuit-cargo set-value #t)
@@ -299,7 +309,7 @@
 (define tab-area
   (new tab-panel%
        [parent main-panel]
-       [choices '("Inventories" "Totals" "Craft" "Suggest")]))
+       [choices '("Inventories" "Recipe Finder")]))
 
 (define tab-data-area
   (new panel:single% [parent tab-area]))
@@ -319,13 +329,17 @@
        [parent inventories]
        [style '(vscroll)]))
 
+;
+; Recipe Finder panel, one of the tab choices
+;
+(define recipe-finder (new vertical-panel% [parent tab-data-area]))
+
+
 ;;;
 ;;; Ready, set, go ...
 ;;;
 (load-data! (get-latest-save-file-path))
 (send tab-data-area active-child inventories)
-
-          
 
 (send frame show #t)
 
