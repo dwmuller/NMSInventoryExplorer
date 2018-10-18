@@ -8,7 +8,8 @@
 
 (require "save-file.rkt"
          "items.rkt"
-         "inventory.rkt")
+         "inventory.rkt"
+         "data-table.rkt")
 
 
 (define (inventory-type? sym)
@@ -41,7 +42,9 @@
 
 (define (inventory-selection-changed . ignored)
   (set! total-of-selected-inventories (calc-totals-inventory))
-  (show-inventory-content-in-table-panel inventory-header-panel inventory-data-panel))
+  (send inventories refresh)
+  ;(show-inventory-content-in-table-panel)
+  )
 
 ;;;
 ;;; Checkbox class that also stores an inventory key to indicate
@@ -142,67 +145,31 @@
   (update-inventory-check-boxes! chest-check-boxes (available-keys-for 'chest))
   (inventory-selection-changed))
 
-(define (show-inventory-content-in-table-panel header table)
+(define (visit-inventory-data visitor)
   
-  ; This, and the matching end later, is critical for performance:
-  (send inventories begin-container-sequence)
-  ;
-  ; Note: For a child to be deletable, it must implement window<%>, so
-  ; pane% classes do not qualify.
-  ;
+  (define items (sort (hash-keys total-of-selected-inventories) symbol<? #:key item$-name))
+
+  (define (visit-inventory-column inventory col)
+    (for ([item items] [i (in-naturals)])
+      (define value (inventory-available inventory item #f))
+      (when
+          value (visitor i col (number->string value)))))
+
   (define selected-keys (selected-inventory-keys))
   (define selected-inventories
     (map cdr
          (map (λ (k) (assoc k keyed-inventories))
               selected-keys)))
-
-  (define (make-inventory-column heading i items)
-    (define column (new vertical-panel%
-                        [parent table]
-                        [alignment '(right center)]))
-    (new message%
-         [parent (new panel%
-                      [parent header]
-                      [alignment '(right center)]
-                      [style '(border)])]
-         [label heading])
-    (for ([item items])
-      (define value (inventory-available i item #f))
-      (new message% [parent column] [label (if value (number->string value) ".")])))
-
-  (send header change-children (λ (ignored) '()))
-  (send table change-children (λ (ignored) '()))
-
-  (define items (sort (hash-keys total-of-selected-inventories) symbol<? #:key item$-name))
-  (make-inventory-column "Total" total-of-selected-inventories items)
-
-  (new message%
-       [parent (new panel%
-                    [parent header]
-                    [alignment '(left center)]
-                    [style '(border)])]
-       [label "Item"])
-  (define names-column (new vertical-panel% [parent table] [alignment '(left center)]))
-  (for ([item items])
-    (new message% [parent names-column] [label (item->label item)]))
-
-  (for ([key selected-keys]
-        [i selected-inventories])
-    (make-inventory-column (inventory-key->label key) i items))
+  (for ([item items] [row (in-naturals)])
+    (visitor row 0 (item->label)))
+  (visit-inventory-column total-of-selected-inventories 1)
+  (for ([inventory selected-inventories]
+        [col (in-naturals 2)])
+    (visit-inventory-column inventory col))
 
   ; Add a dummy spacer at the end of headings to match the vertical scrollbar
   ; in the data area, so that width calcs work. Width chosen empirically.
-  (new message% [parent header] [label ""] [min-width 14])
-  
-  ; Now adjust widths of headings and data columns to match:
-  (for ([h (send header get-children)]
-        [d (send table get-children)])
-    (define-values (wh hh) (send h get-graphical-min-size))
-    (define-values (wd hd) (send d get-graphical-min-size))
-    (if (< wh wd)
-        (send h min-width wd)
-        (send d min-width wh)))
-  (send inventories end-container-sequence)
+  ;(new message% [parent header] [label ""] [min-width 14])
   )
 
 ;;;
@@ -319,15 +286,21 @@
 ;
 ; Shows totals, and details in currently selected inventories.
 ;
-(define inventories            (new vertical-panel% [parent tab-data-area]))
-(define inventory-header-panel
-  (new horizontal-panel%
-       [parent inventories]
-       [stretchable-height #f]))
-(define inventory-data-panel
-  (new horizontal-panel%
-       [parent inventories]
+(define inventories
+  (new data-table%
+       [parent tab-data-area]
+       [data-visitor visit-inventory-data]
        [style '(vscroll)]))
+
+;  (new vertical-panel% [parent tab-data-area]))
+;(define inventory-header-panel
+;  (new horizontal-panel%
+;       [parent inventories]
+;       [stretchable-height #f]))
+;(define inventory-data-panel
+;  (new horizontal-panel%
+;       [parent inventories]
+;       [style '(vscroll)]))
 
 ;
 ; Recipe Finder panel, one of the tab choices
