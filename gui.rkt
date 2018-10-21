@@ -42,8 +42,8 @@
 
 (define (inventory-selection-changed . ignored)
   (set! total-of-selected-inventories (calc-totals-inventory))
-  (send inventories-grid refresh)
-  )
+  (send inventories-grid set-column-headers
+        (list* "Name" "Totals" (map inventory-key->label (selected-inventory-keys)))))
 
 ;;;
 ;;; Checkbox class that also stores an inventory key to indicate
@@ -281,7 +281,9 @@
   (new data-table%
        [parent tab-data-area]
        [data-visitor visit-inventory-data]
-       [style '(vscroll)]))
+       [style '(vscroll)]
+       ;[spacing 2]
+       [default-column-vars '([alignment (right center)])]))
 
 ;
 ; Recipe Finder panel, one of the tab choices
