@@ -42,8 +42,7 @@
 
 (define (inventory-selection-changed . ignored)
   (set! total-of-selected-inventories (calc-totals-inventory))
-  (send inventories refresh)
-  ;(show-inventory-content-in-table-panel)
+  (send inventories-grid refresh)
   )
 
 ;;;
@@ -55,7 +54,7 @@
     (init inventory-key)
     (define key inventory-key)
     (super-new [label (inventory-key->label key)]
-               [callback inventory-selection-changed])
+               [callback (λ (ignored ...) (queue-callback inventory-selection-changed))])
     (define/public (get-inventory-key) key)))
 
 ;;;
@@ -83,7 +82,7 @@
         (or result (not value))
         ))
     (when changed 
-      (inventory-selection-changed)))
+      (queue-callback inventory-selection-changed)))
   (define (all-false . ignored)
     (define changed
       (for/fold ([result #f])
@@ -93,7 +92,7 @@
         (send c set-value #f)
         (or result value)))
     (when changed 
-      (inventory-selection-changed)))
+      (queue-callback inventory-selection-changed)))
   (new button%
        [parent container]
        [label "All"]
@@ -143,7 +142,7 @@
   (update-inventory-check-boxes! ship-check-boxes (available-keys-for 'ship))
   (update-inventory-check-boxes! vehicle-check-boxes (available-keys-for 'vehicle))
   (update-inventory-check-boxes! chest-check-boxes (available-keys-for 'chest))
-  (inventory-selection-changed))
+  (queue-callback inventory-selection-changed))
 
 (define (visit-inventory-data visitor)
   
@@ -152,24 +151,16 @@
   (define (visit-inventory-column inventory col)
     (for ([item items] [i (in-naturals)])
       (define value (inventory-available inventory item #f))
-      (when
-          value (visitor i col (number->string value)))))
+      (when value
+        (visitor i col (number->string value)))))
 
   (define selected-keys (selected-inventory-keys))
-  (define selected-inventories
-    (map cdr
-         (map (λ (k) (assoc k keyed-inventories))
-              selected-keys)))
   (for ([item items] [row (in-naturals)])
-    (visitor row 0 (item->label)))
+    (visitor row 0 (item->label item)))
   (visit-inventory-column total-of-selected-inventories 1)
-  (for ([inventory selected-inventories]
+  (for ([ki (filter (λ (e) (member (car e) selected-keys)) keyed-inventories)]
         [col (in-naturals 2)])
-    (visit-inventory-column inventory col))
-
-  ; Add a dummy spacer at the end of headings to match the vertical scrollbar
-  ; in the data area, so that width calcs work. Width chosen empirically.
-  ;(new message% [parent header] [label ""] [min-width 14])
+    (visit-inventory-column (cdr ki) col))
   )
 
 ;;;
@@ -286,21 +277,11 @@
 ;
 ; Shows totals, and details in currently selected inventories.
 ;
-(define inventories
+(define inventories-grid
   (new data-table%
        [parent tab-data-area]
        [data-visitor visit-inventory-data]
        [style '(vscroll)]))
-
-;  (new vertical-panel% [parent tab-data-area]))
-;(define inventory-header-panel
-;  (new horizontal-panel%
-;       [parent inventories]
-;       [stretchable-height #f]))
-;(define inventory-data-panel
-;  (new horizontal-panel%
-;       [parent inventories]
-;       [style '(vscroll)]))
 
 ;
 ; Recipe Finder panel, one of the tab choices
@@ -308,11 +289,8 @@
 (define recipe-finder (new vertical-panel% [parent tab-data-area]))
 
 
-;;;
-;;; Ready, set, go ...
-;;;
 (load-data! (get-latest-save-file-path))
-(send tab-data-area active-child inventories)
+(send tab-data-area active-child inventories-grid)
 
 (send frame show #t)
 

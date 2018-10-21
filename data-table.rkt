@@ -5,22 +5,19 @@
 
 (provide data-table%)
 
-;;
-;; Given an expression that resolves to an object, followed
-;; by a list of (uneveluated) symbols representing method names,
-;; define methods by those same names which are implemented by
-;; forwarding calls to the given object.
-;;
-(define-syntax forward
-  (syntax-rules ()
-    [(forward target (internal external))
-     (define/public ((internal external) . args) (send target external . args)) ]
-    [(forward target external)
-     (define/public (external . args) (send target external . args)) ]
-    [(forward target current rest ... )
-     (begin
-       (forward target current)
-       (forward target rest ...))]))    
+; TODO? Consider more convenient methods of providing column init-vars.
+; TODO: Ugh, column headers never disappear.
+; TODO: Refresh causes vscroll position to reset to zero. May need before/after canvas sizes to fix.
+; TODO: Locked row(s) aka row headers, horizontal scrolling.
+;       ... or at least separate width calc for first column.
+; TODO: Scrolling has to include headers. Use hide-(h|v)scroll, generate route copies of events.
+; TODO: Font selection in data area!
+; TODO: Check initialization variable contracts.
+; TODO? Support deleted cols.
+; TODO? Support deleted rows.
+; TODO? Support non-uniform col widths and row heights?
+; TODO? Restrict paint to visible portion when scrolled.
+
 
 (define default-column-vars
   (list (list 'header (λ (p c) (new message% [parent p] [label (format "Column~a" c)])))
@@ -30,7 +27,7 @@
         '[min-height 0]))
 
 (define data-table%
-  (class* object% (subwindow<%>)
+  (class vertical-panel%
     ;;
     ;; Initialization variables
     ;;
@@ -78,47 +75,47 @@
           [style null]            ; border, deleted, hscroll, vscroll
           )
     
-    ; TODO: Initialization variable contract checking.
-    ; TODO: hscroll has to include columns - apply to main panel?
-
     (define visit-data data-visitor)
     (define border init-border)
     (define spacing init-spacing)
     (define column-vars column-init-vars)
           
-        
-    ;;
-    ;; Fields
-    ;;
-    (define main-panel
-      (new vertical-panel%
-           [parent this]
-           [style (set-intersect '(border deleted) style)]
-           [alignment '(left top)]
-           [horiz-margin init-horiz-margin]
-           [vert-margin init-vert-margin]
-           [border border]
-           [enabled init-enabled]
-           [stretchable-width init-stretchable-width]
-           [stretchable-height init-stretchable-height]
-           [min-width init-min-width]
-           [min-height init-min-height]))
-    (define header-container
+    (super-new [parent parent]
+               [style (set-intersect '(border deleted) style)]
+               [alignment '(left top)]
+               [horiz-margin init-horiz-margin]
+               [vert-margin init-vert-margin]
+               [border border]
+               [enabled init-enabled]
+               [stretchable-width init-stretchable-width]
+               [stretchable-height init-stretchable-height]
+               [min-width init-min-width]
+               [min-height init-min-height])
+    (define header-pane
       (new horizontal-pane%
-           [parent main-panel]
-           [spacing spacing]
-           [alignment '(left top)]
+           [parent this]
            [stretchable-height #f]
            [stretchable-width #f]
            ))
+    (define header-container
+      (new horizontal-pane%
+           [parent header-pane]
+           [spacing spacing]
+           [alignment '(left top)]
+           ))
+    ; Spacer to match vert scrollbar in data area:
+    (new pane% [parent header-pane] [min-width 14] [stretchable-width #f])
+
     (define data-area
       (new canvas%
-           [parent main-panel]
+           [parent this]
            [paint-callback (λ (canvas dc) (paint))]
-           [style (list* 'no-focus (set-intersect '(vscroll hscroll) style))]))
+           [style (list* 'no-focus (set-intersect '(vscroll hscroll) style))]))    
+
 
     (define (get-vars-for-column col)
-      (define vars (or (and (< col (length column-vars)) (list-ref column-vars col))
+      (define vars (if (< col (length column-vars))
+                       (list-ref column-vars col)
                        (last column-vars)))
       (define (get sym)
         (car (or (dict-ref vars sym #f) (dict-ref sym default-column-vars))))
@@ -127,7 +124,8 @@
               (get 'style)
               (get 'min-width)
               (get 'min-height)))
-      
+
+    
     (define (add-missing-columns col n)
       (for/last ([i (in-range col (+ col n))])
         (define-values (header alignment style min-w min-h)
@@ -149,9 +147,6 @@
            (define-values (w h d a) (send dc get-text-extent datum))
            (values (inexact->exact w) (inexact->exact h))]))
 
-      ; TODO: Support deleted cols?
-      ; TODO: Support deleted rows?
-      ; TODO: Support variable col widths and row heights?
       (define col-width 0)
       (define row-height 0)
       (define max-row -1)
@@ -175,7 +170,6 @@
               (+ max-row 1)
               (+ max-col 1)))
 
-
     (define (paint)
       (define dc (send data-area get-dc))
       (define-values (rh cw nr nc) (calc-extents dc))
@@ -198,105 +192,36 @@
                           ['center (/ (- rh h) 2)]
                           ['bottom (- rh h)])))
            (send dc draw-text datum x y)]))
+      
       (visit-data paint-datum))
 
+    (define/override (refresh)
+      (define-values (rh cw nr nc) (calc-extents (send data-area get-dc)))
+      (define data-width (max (send header-container min-width)
+                              (+ (* cw nc) (* (- nc 1) spacing))))
+      (define data-height (+ (* rh nr) (* (- nr 1) spacing)))
+      (define-values (hpos vpos) (send data-area get-view-start))
+      (printf "view-start: (~a ~a)~n" hpos vpos)
+      (send data-area
+            init-auto-scrollbars
+            (and (positive? data-width) data-width)
+            (and (positive? data-height) data-height)
+            0 0)
+      (super refresh))))
 
-    ;    (define-values (row-height
-    ;                    col-width
-    ;                    nrows
-    ;                    ncols)
-    ;      (calc-extents (send data get-dc) visit-data))
-    ;
-    ;    (send data min-height (+ (* nrows row-height) (* spacing (- nrows 1))))
-    ;    (send data min-width  (+ (* ncols col-width)  (* spacing (- ncols 1))))
-    ;    
-    ;    (define column-headers
-    ;      (let ([cs (if column-styles
-    ;                    (sequence->generator column-styles)
-    ;                    (infinite-generator (yield null)))]
-    ;            [ca (if column-alignment
-    ;                    (sequence->generator column-alignment)
-    ;                    (infinite-generator (yield #f)))])
-    ;        (for/list ([h init-column-headers])
-    ;          (define s (cs))
-    ;          (define a (ca))
-    ;          ph)))
-    ;
-    ;    (for ([h column-headers])
-    ;      (send h min-width col-width))
-
-    ;;
-    ;; Interface implementations
-    ;;
-    (forward main-panel
-             ; area<%>
-             get-graphical-min-size
-             get-parent
-             get-top-level-window
-             min-width
-             min-height
-             stretchable-height
-             stretchable-width
-             ; subarea<%>
-             horiz-margin
-             vert-margin
-             ; window<%>
-             accept-drop-files
-             client->screen
-             enable
-             focus
-             get-client-handle
-             get-client-size
-             get-cursor
-             get-handle
-             get-height
-             get-label
-             get-plain-label
-             get-size
-             get-width
-             get-x
-             get-y
-             has-focus?
-             is-enabled?
-             is-shown?
-             on-drop-file
-             on-focus
-             on-move
-             on-size
-             on-subwindow-char
-             on-subwindow-event
-             on-subwindow-focus
-             on-superwindow-enable
-             on-superwindow-show
-             popup-menu
-             refresh
-             screen->client
-             set-cursor
-             set-label
-             show
-             warp-pointer
-             ; subwindow<%>
-             reparent)
-    
-    (super-new)
-    (send parent add-child this)
-
-    ;    (define/public (get-dimensions) (values nrows ncols))
-    
-    ))
-
-(define f (new frame% [label "Yowzer!"]))
-
-(define data '((0 0 "Flub")
-               (2 0 "Pollux")
-               (1 1 "Warble")
-               (0 2 "Kazoo!")
-               (1 2 "42")))
-(define (visit visitor)
-  (for ([d data])
-    (printf "~a~n" d)
-    (apply visitor d)))
-
-(define test (new data-table% [parent f] [data-visitor visit] [spacing 2]))
-
-(send f show #t)
+; TESTING:
+;(define f (new frame% [label "Yowzer!"]))
+;
+;(define data '((0 0 "Flub")
+;               (2 0 "Pollux")
+;               (1 1 "Warble")
+;               (0 2 "Kazoo!")
+;               (1 2 "42")))
+;(define (visit visitor)
+;  (for ([d data])
+;    (printf "~a~n" d)
+;    (apply visitor d)))
+;
+;(define test (new data-table% [parent f] [data-visitor visit] [spacing 2]))
+;
+;(send f show #t)
