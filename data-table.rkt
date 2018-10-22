@@ -5,11 +5,10 @@
 
 (provide data-table%)
 
-; TODO: Refresh causes vscroll position to reset to zero. May need before/after canvas sizes to fix.
-; TODO: Locked row(s) aka row headers, horizontal scrolling.
-;       ... or at least separate width calc for first column.
 ; TODO: Scrolling has to include headers. Use hide-(h|v)scroll, generate route copies of events.
-; TODO: Font selection in data area!
+;       Looks like the header containers need to be converted to canvases. Can't manually scroll panels AFAICT.
+; TODO: Refresh causes vscroll position to reset to zero. May need before/after canvas sizes to fix.
+; TODO: Font selection in data area.
 ; TODO: Check initialization variable contracts.
 ; TODO? Support deleted cols.
 ; TODO? Support deleted rows.
@@ -61,6 +60,8 @@
           ; When false, the number of columns is determined by the data, and no headers are shown.
           ; Otherwise, a list of labels to use as a column headers, one for each column.
           [(init-column-headers column-headers) #f]
+          ; Similar to column-headers.
+          [(init-row-headers row-headers) #f]
           [(init-default-column-vars default-column-vars) static-default-column-vars]
           [(init-border border) 0]
           [(init-spacing spacing) 0]
@@ -84,6 +85,7 @@
     (define spacing init-spacing)
     (define default-column-vars init-default-column-vars)
     (define column-headers #f) ; Will be set later.
+    (define row-headers #f)
     (define column-vars init-column-vars)
     (define data-vscroll (member 'vscroll style))
     (define data-hscroll (member 'hscroll style))
@@ -99,25 +101,52 @@
                [stretchable-height init-stretchable-height]
                [min-width init-min-width]
                [min-height init-min-height])
+
     (define column-header-area
       (new horizontal-pane%
            [parent this]
            [stretchable-height #f]
            [stretchable-width #f]
            ))
-    (define column-header-container
-      (new horizontal-panel%
+    (define row-header-spacer
+      (new pane%
            [parent column-header-area]
-           [style '(deleted)]
+           [stretchable-height #f]
+           [stretchable-width #f]))
+    (define column-header-container
+      (new horizontal-pane%
+           [parent column-header-area]
            [spacing spacing]
-           [alignment '(left top)]
-           ))
+           [alignment '(left top)]))
+    (define column-header-scroll-spacer
+      (new pane%
+           [parent column-header-area]
+           [min-width (if (member 'vscroll style) 15 0)]
+           [stretchable-width #f]))
 
+    (define lower-area (new horizontal-pane% [parent this]))
+
+    (define row-header-area
+      (new vertical-pane%
+           [parent lower-area]
+           [stretchable-width #f]))
+    (define row-header-container
+      (new vertical-panel%
+           [parent row-header-area]
+           [style (if data-vscroll '(hide-vscroll) '())]
+           [spacing spacing]
+           [alignment '(left top)]))
+    (define row-header-scroll-spacer
+      (new pane%
+           [parent row-header-area]
+           [min-height (if (member 'hscroll style) 15 0)]
+           [stretchable-height #f]))
+    
     (define data-area
       (new canvas%
-           [parent this]
+           [parent lower-area]
            [paint-callback (λ (canvas dc) (paint))]
-           [style (list* 'no-focus (set-intersect '(vscroll hscroll) style))]))    
+           [style (list* 'no-focus (set-intersect '(vscroll hscroll) style))]))
 
     (define (get-vars-for-column col)
       (define vars (or (and column-vars
@@ -149,11 +178,12 @@
            (define-values (w h d a) (send dc get-text-extent datum))
            (values (inexact->exact w) (inexact->exact h))]))
 
-      (define headers (send column-header-container get-children))
-      (define col-width 0)
-      (define row-height 0)
-      (define max-row -1)
-      (define max-col (- (length headers) 1))
+      (define col-headers (send column-header-container get-children))
+      (define col-width (apply max 0 (map (λ (h) (send h get-width)) col-headers)))
+      (define row-headers (send row-header-container get-children))
+      (define row-height (apply max 0 (map (λ (h) (send h get-height)) row-headers)))
+      (define max-row (- (length row-headers) 1))
+      (define max-col (- (length col-headers) 1))
       (define (visitor row col datum)
         (define-values (w h) (datum-extents col datum))
         (set! max-row (max max-row row))
@@ -161,15 +191,20 @@
         (set! col-width (max col-width w))
         (set! row-height (max row-height h)))
       (visit-data visitor)
-      (set! col-width (apply max col-width (map (λ (a) (send a get-width)) headers)))
-      (for ([h headers])
+      (for ([h col-headers])
         (send h min-width col-width))
+      (for ([h row-headers])
+        (send h min-height row-height))
       (values row-height
               col-width
               (+ max-row 1)
               (+ max-col 1)))
 
     (define (paint)
+      (define-values (start-x start-y) (send data-area get-view-start))
+      (printf "paint at x/y (~a ~a)~n" start-x start-y)
+      (when data-vscroll
+        (send row-header-container on-move 0 start-y))
       (define dc (send data-area get-dc))
       (define-values (rh cw nr nc) (calc-extents dc))
       (define (paint-datum row col datum)
@@ -182,38 +217,42 @@
                         (* spacing col)
                         (match (car alignment)
                           ['right  (- cw w)]
-                          ['center (/ (- cw w) 2)]
+                          ['center (quotient (- cw w) 2)]
                           ['left   0])))
            (define y (+ (* rh row)
                         (* spacing row)
                         (match (cadr alignment)
                           ['top 0]
-                          ['center (/ (- rh h) 2)]
+                          ['center (quotient (- rh h) 2)]
                           ['bottom (- rh h)])))
            (send dc draw-text datum x y)]))      
       (visit-data paint-datum))
 
     
-    (define (make-column-header-container-children headers)
-      
-      (for/list ([header headers]
-                 [col-index (in-naturals)])
-        (define-values (alignment style min-w min-h)
-          (get-vars-for-column col-index))
-        (define ph (new panel%
-                        [parent column-header-container]
-                        [style null] ; TODO: Allow only deleted? 
-                        [min-width min-w]
-                        [alignment alignment]))
-        (new message% [parent ph] [label header])
-        ph))
+    (define (paint-column-header-container headers)
+      (define new-children
+        (for/list ([header headers]
+                   [col-index (in-naturals)])
+          (define-values (alignment style min-w min-h)
+            (get-vars-for-column col-index))
+          (define ph (new panel%
+                          [parent column-header-container]
+                          [min-width min-w]
+                          [alignment alignment]))
+          (new message% [parent ph] [label header])
+          ph))
+      (send column-header-container change-children (λ (ignored) new-children)))
     
-    (define (make-column-header-area-children)
-      (if data-vscroll
-          (list column-header-container
-                ; Spacer to match vert scrollbar in data area:
-                (new pane% [parent column-header-area] [min-width 15] [stretchable-width #f]))
-          (list column-header-container)))
+    (define (paint-row-header-container headers)
+      (define new-children
+        (for/list ([header headers]
+                   [row-index (in-naturals)])
+          (define ph (new panel%
+                          [parent row-header-container]
+                          [alignment '(left center)]))
+          (new message% [parent ph] [label header])
+          ph))
+      (send row-header-container change-children (λ (ignored) new-children)))
 
     (define/override (refresh)
       (define-values (rh cw nr nc) (calc-extents (send data-area get-dc)))
@@ -235,18 +274,30 @@
     (define/public (set-column-headers headers)
       (send column-header-area begin-container-sequence)
       (cond
-        [headers (send column-header-container change-children
-                       (λ (ignored) (make-column-header-container-children headers)))
-                 (unless column-headers
-                   (send column-header-area change-children
-                         (λ (ignored) (make-column-header-area-children))))]
-        [else (when column-headers
-                (send column-header-area delete-child column-header-container))])
+        [headers (paint-column-header-container headers)
+                 (send column-header-container reflow-container)
+                 (send row-header-spacer min-height (send column-header-container min-height))]
+        [else (send column-header-container change-children (λ (ignored) null))
+              (send row-header-spacer min-height 0)])
       (set! column-headers headers)
       (send column-header-area end-container-sequence)
       (refresh))
     
+    (define/public (set-row-headers headers)
+      (send row-header-area begin-container-sequence)
+      (cond
+        [headers (paint-row-header-container headers)
+                 (send row-header-container reflow-container)
+                 (define-values (header-width header-height) (send row-header-container get-client-size))
+                 (printf "row-header-container client w/h: (~a ~a)~n" header-width header-height)
+                 (send row-header-spacer min-width header-width)]
+        [else (send row-header-container change-children (λ (ignored) null))
+              (send row-header-spacer min-width 0)])
+      (set! row-headers headers)
+      (send row-header-area end-container-sequence))
+    
     (set-column-headers init-column-headers)
+    (set-row-headers init-row-headers)
 
     ))
 

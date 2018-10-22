@@ -42,8 +42,10 @@
 
 (define (inventory-selection-changed . ignored)
   (set! total-of-selected-inventories (calc-totals-inventory))
-  (send inventories-grid set-column-headers
-        (list* "Name" "Totals" (map inventory-key->label (selected-inventory-keys)))))
+  (define inventories (list* "Totals" (map inventory-key->label (selected-inventory-keys))))
+  (define items (map item->label (sort (hash-keys total-of-selected-inventories) symbol<? #:key item$-name)))
+  (send inventories-grid set-column-headers inventories)
+  (send inventories-grid set-row-headers items))
 
 ;;;
 ;;; Checkbox class that also stores an inventory key to indicate
@@ -149,18 +151,16 @@
   (define items (sort (hash-keys total-of-selected-inventories) symbol<? #:key item$-name))
 
   (define (visit-inventory-column inventory col)
-    (for ([item items] [i (in-naturals)])
+    (for ([item items] [row-index (in-naturals)])
       (define value (inventory-available inventory item #f))
       (when value
-        (visitor i col (number->string value)))))
+        (visitor row-index col (number->string value)))))
 
   (define selected-keys (selected-inventory-keys))
-  (for ([item items] [row (in-naturals)])
-    (visitor row 0 (item->label item)))
-  (visit-inventory-column total-of-selected-inventories 1)
+  (visit-inventory-column total-of-selected-inventories 0)
   (for ([ki (filter (λ (e) (member (car e) selected-keys)) keyed-inventories)]
-        [col (in-naturals 2)])
-    (visit-inventory-column (cdr ki) col))
+        [col-index (in-naturals 1)])
+    (visit-inventory-column (cdr ki) col-index))
   )
 
 ;;;
@@ -281,8 +281,8 @@
   (new data-table%
        [parent tab-data-area]
        [data-visitor visit-inventory-data]
-       [style '(vscroll)]
-       ;[spacing 2]
+       [style '(vscroll hscroll)]
+       [spacing 2]
        [default-column-vars '([alignment (right center)])]))
 
 ;
