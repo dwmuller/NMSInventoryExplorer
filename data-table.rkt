@@ -25,6 +25,19 @@
     [min-width 0]
     [min-height 0]))
 
+;;
+;; A class to display data in a grid, optionally scrollable,
+;; with optional column and row headers.
+;;
+;; Although this is derived from vertical-panel%, that's an implementation
+;; detail which I would rather have hidden. I couldn't figure out a practical
+;; way to do that given some details of the gui library. E.g. vertical-panel% itself
+;; wont't accept just any window<%> interface implementation as a parent.
+;;
+;; TODO: Make this implement window<%>. Internally, make a plain panel% with this as parent,
+;; put the current vertical-panel% inside that panel%. That would work and would properly
+;; encapsulate everything.
+;;
 (define data-table%
   (class vertical-panel%
     ;;
@@ -43,8 +56,7 @@
     (init parent
           data-visitor
           ;
-          ; When false, columns use defaults and the number of columns is determined
-          ; by the data.
+          ; When false, columns use defaults.
           ; Otherwise, a list of lists of initialization variables, one for each column.
           ; Most apply to each cell of a column.
           ; (listof col-init-vars ...)
@@ -56,15 +68,23 @@
           ;  style     (listof (or/c deleted) ...) = null
           ;  min-width
           ;  min-height
+          ;
+          ; TODO: The only init var honored right now is alignment.
           [(init-column-vars column-vars) #f]
+
+          ; Default column vars. See above.
+          [(init-default-column-vars default-column-vars) static-default-column-vars]
           ;
           ; When false, the number of columns is determined by the data, and no headers are shown.
           ; Otherwise, a list of labels to use as a column headers, one for each column.
           [(init-column-headers column-headers) #f]
           ; Similar to column-headers.
           [(init-row-headers row-headers) #f]
-          [(init-default-column-vars default-column-vars) static-default-column-vars]
+
+          ; Border around this entire GUI element.
           [(init-border border) 0]
+          
+          ; Spacing around each data element.
           [(init-spacing spacing) 0]
 
           ; area<%>
@@ -72,24 +92,52 @@
           [(init-min-height min-height) #f]
           [(init-stretchable-width stretchable-width) #t]
           [(init-stretchable-height stretchable-height) #t]
+          
           ; subarea<%>
           [(init-horiz-margin horiz-margin) 0]
           [(init-vert-margin vert-margin) 0]
+          
           ; window<%>
           [(init-enabled enabled) #t]
+          
           ; data-table%
           [style null]            ; border, deleted, hscroll, vscroll
           )
-    
+
+    ;
+    ; A function provided by our client that we can call, giving it
+    ; a function that takes a row index, a column index, and a datum to
+    ; display in the data area. The client's function should call us
+    ; back once for each datum, in any order.
+    ;
     (define visit-data data-visitor)
     (define border init-border)
+    ;
+    ; Spacing to apply between data items in the data area, and by implication
+    ; between row and column headers.
+    ;
     (define spacing init-spacing)
+    ;
+    ; Variables to affect the display of column data, similar
+    ; to GUI initialization variables.
+    ;
     (define default-column-vars init-default-column-vars)
+    
+    (define column-vars init-column-vars)
+
     (define column-headers #f) ; Will be set later.
     (define row-headers #f)
-    (define column-vars init-column-vars)
+    ;
+    ; Flags to indicate if scrolling is enabled.
+    ;
     (define data-vscroll (member 'vscroll style))
     (define data-hscroll (member 'hscroll style))
+    ;
+    ; The list of graphical objects that represent the row headers, if any.
+    ; They are not all always visible. The list is rebuilt when headers
+    ; are changed.
+    ;
+    (define row-labels null)
           
     (super-new [parent parent]
                [style (set-intersect '(border deleted) style)]
@@ -264,12 +312,11 @@
               [col-index (in-naturals first-visible-col)])
           (paint-element 0 (- col-index first-visible-col) header ch-max-height max-width dc (get-column-var col-index 'alignment)))))
 
-    (define row-header-labels null)
     (define (paint-row-header-area)
       (when row-headers
         (send row-header-area begin-container-sequence)
         (define first-visible-row (send data-area get-scroll-pos 'vertical))
-        (define new-children (list-tail row-header-labels first-visible-row))
+        (define new-children (list-tail row-labels first-visible-row))
         (send row-header-container change-children (λ (ignored) new-children))
         (send row-header-area end-container-sequence)))
 
@@ -279,7 +326,7 @@
         (calc-header-max-extents (send column-header-container get-dc) column-headers))
       ; Make all row header labels visible so we can get the width of that column. Kinda grody.
       ; We ask for a refresh after this, which will repaint them correctly.
-      (send row-header-container change-children (λ (ignored) row-header-labels))
+      (send row-header-container change-children (λ (ignored) row-labels))
       (send row-header-container reflow-container)
       (define-values (rh-max-width rh-total-height) (send row-header-container get-client-size))
       (send row-header-spacer min-width rh-max-width)
@@ -318,7 +365,7 @@
       (send row-header-area begin-container-sequence)
       (set! row-headers headers)
       (cond
-        [headers  (set! row-header-labels
+        [headers  (set! row-labels
                         (for/list ([header row-headers]
                                    [row-index (in-naturals)])
                           (define ph (new panel%
@@ -327,7 +374,7 @@
                                           [stretchable-height #f]))
                           (new message% [parent ph] [label header])
                           ph))]
-        [else (set! row-header-labels null)])
+        [else (set! row-labels null)])
       (update-dimensions)
       (send row-header-area end-container-sequence))
     
