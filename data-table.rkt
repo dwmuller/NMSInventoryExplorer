@@ -11,13 +11,17 @@
 ;       Approach using message% objects may not work reliably unless I stop creating new objects.
 ; TODO: Refresh causes vscroll (& hscroll?) position to reset to zero. May need before/after canvas sizes to fix.
 ; TODO: Check initialization variable contracts.
-; TODO? Support deleted cols.
-; TODO? Support deleted rows.
+; TODO? Support deleted (hidden) cols.
+; TODO? Support deleted (hidden) rows.
 ; TODO? Support non-uniform col widths and row heights.
 ; TODO? Restrict paint to visible portion when scrolled.
-; TODO? Derive from subwindow%. Makes use of internal panes, panels impossible, would have to paint headers on separate canvases.
-;       But who owns the canvases? Must be frame, dialog, panel, or pane! Grrr.
-
+; TODO? Derive from subwindow%. Internally, make a plain panel% with this as parent,
+;       put the current vertical-panel% inside that panel%. That would work and would properly
+;       encapsulate everything.
+; TODO? If we keep per-column variables, make the field an assoc list so it can be a sparse mapping.
+; TODO? Support interactive re-ordering of columns and rows.
+; TODO? Support sorting by columnS (And by rows?) 
+;
 
 (define static-default-column-vars
   '([alignment (left center)]
@@ -28,15 +32,6 @@
 ;;
 ;; A class to display data in a grid, optionally scrollable,
 ;; with optional column and row headers.
-;;
-;; Although this is derived from vertical-panel%, that's an implementation
-;; detail which I would rather have hidden. I couldn't figure out a practical
-;; way to do that given some details of the gui library. E.g. vertical-panel% itself
-;; wont't accept just any window<%> interface implementation as a parent.
-;;
-;; TODO: Make this implement window<%>. Internally, make a plain panel% with this as parent,
-;; put the current vertical-panel% inside that panel%. That would work and would properly
-;; encapsulate everything.
 ;;
 (define data-table%
   (class vertical-panel%
@@ -122,7 +117,8 @@
     ; to GUI initialization variables.
     ;
     (define default-column-vars init-default-column-vars)
-    
+    ;
+    ; Per-column variables.
     (define column-vars init-column-vars)
 
     (define column-headers #f) ; Will be set later.
@@ -264,9 +260,6 @@
         (set! max-width (max max-width w))
         (set! max-height (max max-height h)))
       (visit-data visitor)
-      ; TODO: Remove this!
-      (for ([h row-headers])
-        (send h min-height max-height))
       (values max-height
               max-width
               (+ max-row 1)
@@ -321,11 +314,14 @@
         (send row-header-area end-container-sequence)))
 
     (define (update-dimensions)
+      (send this begin-container-sequence)
       (define-values (max-height max-width nrows ncols) (calc-extents))
       (define-values (ch-max-width ch-max-height)
         (calc-header-max-extents (send column-header-container get-dc) column-headers))
       ; Make all row header labels visible so we can get the width of that column. Kinda grody.
       ; We ask for a refresh after this, which will repaint them correctly.
+      (for ([h row-labels])
+        (send h min-height max-height))
       (send row-header-container change-children (λ (ignored) row-labels))
       (send row-header-container reflow-container)
       (define-values (rh-max-width rh-total-height) (send row-header-container get-client-size))
@@ -350,7 +346,8 @@
               scroll-page-cols scroll-page-rows
               0 0))
       (printf "data w/h: (~a ~a)~n" total-data-width total-data-height)
-      (send this refresh))
+      (send this refresh)
+      (send this end-container-sequence))
 
 
     (define/override (on-size width height)
@@ -362,7 +359,6 @@
       (update-dimensions))
     
     (define/public (set-row-headers headers)
-      (send row-header-area begin-container-sequence)
       (set! row-headers headers)
       (cond
         [headers  (set! row-labels
@@ -375,8 +371,7 @@
                           (new message% [parent ph] [label header])
                           ph))]
         [else (set! row-labels null)])
-      (update-dimensions)
-      (send row-header-area end-container-sequence))
+      (update-dimensions))
     
     (set-column-headers init-column-headers)
     (set-row-headers init-row-headers)
