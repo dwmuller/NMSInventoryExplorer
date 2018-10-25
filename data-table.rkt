@@ -6,9 +6,7 @@
 (provide data-table%)
 
 ; TODO: Font selection in canvases.
-; BUG : Row number during vertical scrolling occasionally too long for list.
 ; TODO: Header scrolling now works, but is totally different for row vs. column headers. After the above refinements, choose one.
-;       Approach using message% objects may not work reliably unless I stop creating new objects.
 ; TODO: Refresh causes vscroll (& hscroll?) position to reset to zero. May need before/after canvas sizes to fix.
 ; TODO: Check initialization variable contracts.
 ; TODO? Support deleted (hidden) cols.
@@ -20,7 +18,9 @@
 ;       encapsulate everything.
 ; TODO? If we keep per-column variables, make the field an assoc list so it can be a sparse mapping.
 ; TODO? Support interactive re-ordering of columns and rows.
-; TODO? Support sorting by columnS (And by rows?) 
+; TODO? Support sorting by columnS (And by rows?)
+; TODO? Support bitmaps in addition to text, both data and headers.
+; TODO? Support multiple row/column headers.
 ;
 
 (define static-default-column-vars
@@ -248,9 +248,8 @@
       (define-values (ch-max-width ch-max-height)
         (calc-header-max-extents (send column-header-container get-dc) column-headers))
       (define max-width ch-max-width)
-      (define row-headers (send row-header-container get-children))
       (define max-height 0)
-      (define max-row (- (length row-headers) 1))
+      (define max-row (- (length row-labels) 1))
       (define max-col (if column-headers (- (length column-headers) 1) -1))
       (define dc (send data-area get-dc))
       (define (visitor row col datum)
@@ -309,13 +308,25 @@
       (when row-headers
         (send row-header-area begin-container-sequence)
         (define first-visible-row (send data-area get-scroll-pos 'vertical))
+        (printf "row label count ~a, scroll pos ~a~n" (length row-labels) first-visible-row)
         (define new-children (list-tail row-labels first-visible-row))
         (send row-header-container change-children (λ (ignored) new-children))
         (send row-header-area end-container-sequence)))
 
     (define (update-dimensions)
       (send this begin-container-sequence)
+
+      ;
+      ; Get the overall data cell height and width.
+      ;
       (define-values (max-height max-width nrows ncols) (calc-extents))
+      (define effective-cell-height (+ max-height spacing))
+      (define effective-cell-width (+ max-width spacing))
+
+      ;
+      ; We need separate width and height calculations for the row and column headers, respectively,
+      ; since those don't have to match the data cell sizes.
+      ;
       (define-values (ch-max-width ch-max-height)
         (calc-header-max-extents (send column-header-container get-dc) column-headers))
       ; Make all row header labels visible so we can get the width of that column. Kinda grody.
@@ -325,30 +336,50 @@
       (send row-header-container change-children (λ (ignored) row-labels))
       (send row-header-container reflow-container)
       (define-values (rh-max-width rh-total-height) (send row-header-container get-client-size))
+
+      ;
+      ; The row header spacer, a blank space in the upper left corner, needs to match the
+      ; width and height of the row and column headers. (Wither of which can be zero!)
+      ; 
       (send row-header-spacer min-width rh-max-width)
       (send row-header-spacer min-height ch-max-height)
+
+      ;
+      ; Adjust the header areas themselves to accomodate the widest or tallest member.
+      ;
       (send row-header-area min-width rh-max-width)
       (send column-header-area min-height ch-max-height)
-      (define total-data-width (+ (* max-width ncols) (* (- ncols 1) spacing)))
-      (define total-data-height (+ (* max-height nrows) (* (- nrows 1) spacing)))
+
+      ;
+      ; Now comes the critical adjustment of the scroll bars.
+      ;
+      (define total-data-width (- (* effective-cell-width ncols) spacing))
+      (define total-data-height (- (* effective-cell-height nrows) spacing))
       (unless data-hscroll (send data-area min-client-width total-data-width))
       (unless data-vscroll (send data-area min-client-height total-data-height))
       (when (or data-hscroll data-vscroll)
         (define-values (client-width client-height) (send data-area get-client-size))
         (define scroll-total-cols (and data-hscroll (positive? ncols) (max 2 (- ncols 1))))
         (define scroll-total-rows (and data-vscroll (positive? nrows) (max 2 (- nrows 1))))
-        (define scroll-page-cols (max 1 (if (positive? max-width) (quotient client-width max-width) 0)))
-        (define scroll-page-rows (max 1 (if (positive? max-height) (quotient client-height max-height) 0)))
-        (printf "Scroll total rows/cols: (~a ~a)~n" scroll-total-rows scroll-total-cols)
-        (printf "Scroll page  rows/cols: (~a ~a)~n" scroll-page-rows scroll-page-cols)
+        (define scroll-page-cols (max 1 (if (positive? effective-cell-width)
+                                            (quotient client-width effective-cell-width)
+                                            0)))
+        (define scroll-page-rows (max 1 (if (positive? effective-cell-height)
+                                            (quotient client-height effective-cell-height)
+                                            0)))
+        ;(printf "Scroll total rows/cols: (~a ~a)~n" scroll-total-rows scroll-total-cols)
+        ;(printf "Scroll page  rows/cols: (~a ~a)~n" scroll-page-rows scroll-page-cols)
         (send data-area init-manual-scrollbars
               scroll-total-cols scroll-total-rows
               scroll-page-cols scroll-page-rows
               0 0))
-      (printf "data w/h: (~a ~a)~n" total-data-width total-data-height)
+      ;(printf "data w/h: (~a ~a)~n" total-data-width total-data-height)
+      
+      ;
+      ; All done. Queue a refresh and allow updates to occur.
+      ;
       (send this refresh)
       (send this end-container-sequence))
-
 
     (define/override (on-size width height)
       (update-dimensions)
@@ -372,7 +403,6 @@
                           ph))]
         [else (set! row-labels null)])
       (update-dimensions))
-    
     (set-column-headers init-column-headers)
     (set-row-headers init-row-headers)
 
