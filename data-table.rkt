@@ -6,7 +6,6 @@
 (provide data-table%)
 
 ; TODO: Font selection in canvases.
-; TODO: Row header width varies based on rows currently visible. Ought not. 
 ; BUG : Row number during vertical scrolling occasionally too long for list.
 ; TODO: Header scrolling now works, but is totally different for row vs. column headers. After the above refinements, choose one.
 ;       Approach using message% objects may not work reliably unless I stop creating new objects.
@@ -285,6 +284,7 @@
       (define-values (rh-max-width rh-total-height) (send row-header-container get-client-size))
       (send row-header-spacer min-width rh-max-width)
       (send row-header-spacer min-height ch-max-height)
+      (send row-header-area min-width rh-max-width)
       (send column-header-area min-height ch-max-height)
       (define total-data-width (+ (* max-width ncols) (* (- ncols 1) spacing)))
       (define total-data-height (+ (* max-height nrows) (* (- nrows 1) spacing)))
