@@ -46,6 +46,12 @@ Code exists for doing heuristic search for recipe chains (given a target
 item and count) that can be satisfied by a given inventory, but has not
 been wired into any UI yet.
 
-
+Hello Games tried to obscure the save file with a release in late 2018
+that changed the plain English JSON tags to obfuscated bits of text.
+The mapping of these tags in save-file.rkt is incomplete, based on what
+I was able to figure out so far from one of my own save files.
+Similarly, the information in items.rkt, which enumerates the items in
+the game with their base values (where known) is not complete, nor is
+the listing of recipes in recipes.rkt.
 
 [Racket]: https://racket-lang.org/

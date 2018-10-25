@@ -10,14 +10,22 @@
 
 (struct item$ (name id base-value flags) #:transparent)
 
-; This list is not complete.
+; This list is not complete. Each entry lists a symbol to represent
+; a kind of item in the game, an optional base value, and an optional
+; ID string as used in the save files. Without the ID, the item cannot
+; be recognized in save files. The base values are not used at this time.
 ;
-; Not all base values are known.
 ; For items thought to be available only from special sources (e.g. sentinel machines),
 ; the value is set to 1 billion.
 ;
-; Id values are used in save files to refer to items. Not all are known.
-; TODO: Not all that are known are entered here.
+; TODO: The item list is incomplete.
+; TODO: Capture and use the game's icons for items.
+;       Store these in a separate file. (Racket-specific file formats
+;       can include bitmap objects, but can still be edited easily
+;       in DrRacket. Seems a shame not to leverage that unique ability.)
+; TODO: Use a more regular symbol name convention that can be be easily converted
+;       back to the item's in-game name, with spaces and dashes. E.g. use a dash
+;       for a space (which is the  norm now) and an equal sign for a space.
 ;
 (define raw-items
   '((Activated-Cadmium 450 "EX_RED")

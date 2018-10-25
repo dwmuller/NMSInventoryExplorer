@@ -83,6 +83,29 @@
     (for ((i (map car (recipe$-inputs r))))
       (hash-update! recipes-by-input i (λ (cur) (list* r cur)) '()))))
 
+;;
+;; Known recipes.
+;;
+;; Many of these come from the No Man's Sky wiki, the rest from the game itsel.f
+;;
+;; The syntax is simple. Each entry is a list. The first element of the list is
+;; a symbol representing the output item of the following recipes. It must match
+;; an item defined in items.rkt.
+;;
+;; Each recipe is a list which starts with the symbol refine or build, your two
+;; kinds of in-game crafting actions. Then comes up an optional number of the output
+;; item that the recipe produces, which defaults to one. Then come the recipe inputs.
+;; Each input is either an item symbol, implying that one of that input item is needed,
+;; or a list of item symbol and count, indicating how many of that input item is needed.
+;;
+;; In order to greatly collapse the size of definitions, an input item can also be
+;; specified using a list of form (or {input} ...). There are some items that can be
+;; produced by a bunch of different recipes that can be succinctly represented this
+;; way. When the recipe definitions are stored, these forms are expanded into simpler
+;; canonical representations.
+;;
+;; TODO: Recipe lists are incomplete.
+
 (define raw-recipes
   '(
     ;; Resources

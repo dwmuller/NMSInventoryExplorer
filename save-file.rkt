@@ -15,18 +15,27 @@
 ;;; Contains only those parts that we need.
 ;;;
 (struct game-data
-  (path
-   modify-seconds      ; Time when file was last modified
-
+  (
+   ; Path of the save file.
+   path
+   ; Time it was last modified.
+   modify-seconds
+   ; An assoc list of inventories.
+   ; The keys are pairs (conses) with a specific structure to identify an inventory; see inventory-key?.
+   ; The values are inventories; see inventory.rkt.
    inventories
-   
+   ; List of ship names. Length varies; I believe the current in-game limit is three, but I'm not sure.
+   ; The ship indexes in inventory keys corresponds to position in this list.
    starships
+   ; List of vehicle names. Length varies; current in-game limit is three.
+   ; The vehicle indexes in inventory keys corresponds to position in this list.
    vehicles)
   #:transparent)
 
 ; TODO:
 ; Primary ship index: PlayerStateData.PrimaryShip
 ; Primary vehicle index: PlayerStateData.PrimaryVehicle
+; Support older save files that are not obfuscated. Check version #, skip mapping.
 
 ;;;
 ;;; Mapping of JSON tags to old-style tag names, both represented as symbols.
@@ -204,7 +213,16 @@
     (cond
       [(non-empty-string? name) name]
       [else default-name])))
-  
+
+(define (inventory-key? k)
+  (match k
+    [(cons 'exosuit (or 0 1)) #t]
+    [(cons 'freighter 0) #t]
+    [(cons 'ship (? integer? n)) #:when (not (negative? n)) #t]
+    [(cons 'vehicle '(or 0 1 2)) #t]
+    [(cons 'chest (or 0 1 2 3 4 5 6 7 8 9)) #t]
+    [_ #f]))
+
 (define (get-keyed-inventories json)
   (append
    (list
