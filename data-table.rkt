@@ -10,9 +10,6 @@
 ; TODO? Support deleted (hidden) cols.
 ; TODO? Support deleted (hidden) rows.
 ; TODO? Support non-uniform col widths and row heights. (medium)
-; TODO? Derive from subwindow%. Internally, make a plain panel% with this as parent,
-;       put the current vertical-panel% inside that panel%. That would work and would properly
-;       encapsulate everything. (hard)
 ; TODO? If we keep per-column variables, make the field an assoc list so it can be a sparse mapping. (easy, except for testing)
 ; TODO? Support interactive re-ordering of columns and rows. (medium)
 ; TODO? Support sorting by columns (And by rows?) (hard - "data visitor" paradigm is ill suited to this)
