@@ -17,9 +17,6 @@
 ; TODO: Enhance recipe search to produce multiple results.
 ; TODO? Improve ranking of failed recipes - prefer "common" input items?
 
-(define (inventory-type? sym)
-  (member sym '(exosuit freighter ship vehicle chest)))
-
 ;;;
 ;;; (inventory-key->label key) -> string?
 ;;;
@@ -412,7 +409,6 @@
   (new vertical-panel%
        [parent recipe-finder]
        #;[style '(auto-vscroll auto-hscroll)]))
-
 
 ;;
 ;; Vector of tab panel choices.
