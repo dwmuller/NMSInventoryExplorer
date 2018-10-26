@@ -9,20 +9,17 @@
 (require "save-file.rkt"
          "items.rkt"
          "inventory.rkt"
-         "data-table.rkt")
+         "data-table.rkt"
+         "search.rkt")
 
-; TODO: Wire up recipe searches.
-;       Input: item & count, # of results?
-;       Output: Recipe chains, total inventory usage, total inventory shortage on failure.
+; TODO: Wire up recipe search output: Recipe chain, total inventory usage, total inventory shortage on failure
+;       Keep in mind that we eventually want to show multiple recipe search results.
+; TODO: Fix recipe search failures.
+; TODO: Enhance recipe search to produce multiple results.
 
 
 (define (inventory-type? sym)
   (member sym '(exosuit freighter ship vehicle chest)))
-
-(define (inventory-key? key)
-  (match key
-    [(list (? inventory-type?) (? integer?)) #t]
-    [else #f]))
 
 ;;;
 ;;; (inventory-key->label key) -> string?
@@ -39,10 +36,6 @@
     ['ship    (list-ref (game-data-starships current) (cdr key))]
     ['vehicle (list-ref (game-data-vehicles current) (cdr key))]
     ['chest   (format "Storage ~a" (cdr key))]))
-
-(define (item->label item)
-  ;; TODO: Prettify item name.
-  (symbol->string (item$-name item)))
 
 (define (inventory-selection-changed . ignored)
   (set! total-of-selected-inventories (calc-totals-inventory))
@@ -164,8 +157,23 @@
   (visit-inventory-column total-of-selected-inventories 0)
   (for ([ki (filter (λ (e) (member (car e) selected-keys)) keyed-inventories)]
         [col-index (in-naturals 1)])
-    (visit-inventory-column (cdr ki) col-index))
-  )
+    (visit-inventory-column (cdr ki) col-index)))
+
+(define (select-tab panel event)
+  (when (eq? 'tab-panel (send event get-event-type))
+    (define selected (send panel get-selection))
+    (send tab-data-area active-child (vector-ref tab-panels selected))))
+
+(define (find-recipes)
+  (define target-item (label->item (send output-item get-string (send output-item get-selection))))
+  (define target-count (string->number (send output-quantity get-value)))
+  (cond
+    [(or (not target-count)
+         (not (positive? target-count)))
+     (message-box "Input error" "The output quantity must be a positive integer." frame '(stop ok))]
+    [else
+     (define best (get-best-recipe-sequence target-item target-count total-of-selected-inventories))
+     (void)]))
 
 ;;;
 ;;; Top-level window
@@ -265,11 +273,6 @@
 (add-quick-check-box-buttons! chest-selections chest-check-boxes)
 
 
-(define (select-tab panel event)
-  (when (eq? 'tab-panel (send event get-event-type))
-    (define selected (send panel get-selection))
-    (send tab-data-area active-child (vector-ref tab-panels selected))))
-
 ;;
 ;; Tab area to display inventory details, totals, and related operations.
 ;;
@@ -298,7 +301,33 @@
 ;;
 ;; Recipe Finder panel, one of the tab choices
 ;;
-(define recipe-finder (new vertical-panel% [parent tab-data-area]))
+(define recipe-finder             (new vertical-panel% [parent tab-data-area]))
+(define recipe-finder-input-area
+  (new horizontal-pane%
+       [parent recipe-finder]
+       [alignment '(left top)]))
+(define recipe-finder-output-selection-area
+  (new group-box-panel%
+       [parent recipe-finder-input-area]
+       [label "Output selection"]
+       [alignment '(left top)]
+       [stretchable-width #f]
+       [stretchable-height #f]))
+(define output-item
+  (new choice%
+       [parent recipe-finder-output-selection-area]
+       [label "Item"]
+       [choices (map item-name->label (get-sorted-item-names))]))
+(define output-quantity
+  (new text-field%
+       [parent recipe-finder-output-selection-area]
+       [label "Quantity"]
+       [init-value "1"]))
+(define find-recipes-button
+  (new button%
+       [parent recipe-finder-output-selection-area]
+       [label "Find Recipes"]
+       [callback (λ (b e) (find-recipes))]))
 
 ;;
 ;; Vector of tab panel choices.
