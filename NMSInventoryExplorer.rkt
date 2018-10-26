@@ -10,11 +10,12 @@
          "items.rkt"
          "inventory.rkt"
          "data-table.rkt"
-         "search.rkt")
+         "search.rkt"
+         "recipes.rkt")
 
-; TODO: Wire up recipe search output: Recipe chain, total inventory usage, total inventory shortage on failure
-;       Keep in mind that we eventually want to show multiple recipe search results.
 ; TODO: Fix recipe search failures.
+; TODO: Cull items with no recipes from output selection choice box.
+; TODO: Show recipe list's total inventory usage.
 ; TODO: Enhance recipe search to produce multiple results.
 
 
@@ -165,15 +166,67 @@
     (send tab-data-area active-child (vector-ref tab-panels selected))))
 
 (define (find-recipes)
-  (define target-item (label->item (send output-item get-string (send output-item get-selection))))
-  (define target-count (string->number (send output-quantity get-value)))
+  (define target-item (label->item (send recipe-finder-output-item get-string (send recipe-finder-output-item get-selection))))
+  (define target-count (string->number (send recipe-finder-output-quantity get-value)))
   (cond
     [(or (not target-count)
          (not (positive? target-count)))
      (message-box "Input error" "The output quantity must be a positive integer." frame '(stop ok))]
     [else
-     (define best (get-best-recipe-sequence target-item target-count total-of-selected-inventories))
-     (void)]))
+     (clear-recipe-finder-output)
+     (define-values (best deficit) (get-best-recipe-sequence target-item target-count total-of-selected-inventories))
+     (when best
+       (when (not (inventory-empty? deficit))
+         (define output
+           (new group-box-panel%
+              [parent recipe-finder-result-area]
+              [label "Missing inputs"]
+              [stretchable-height #f]))
+         (send output set-orientation #t)
+         (show-inventory deficit output))
+       (define output-area
+         (new horizontal-panel%
+              [parent (new group-box-panel%
+                           [parent recipe-finder-result-area]
+                           [label "Steps"])]
+              [style '(auto-vscroll)]))
+       (define outputs-column (new vertical-pane%
+                                   [parent output-area]
+                                   [alignment '(left center)]
+                                   [stretchable-width #f]))
+       (define inputs-column  (new vertical-pane%
+                                   [parent output-area]
+                                   [alignment '(left center)]
+                                   [stretchable-width #f]))
+       (for ([app best])
+         (define recipe (car app))
+         (define reps (cdr app))
+         (new check-box%
+              [parent outputs-column]
+              [label (format "~aX ~a ~a ~a"
+                             reps
+                             (recipe$-action recipe)
+                             (item->label (recipe$-output recipe))
+                             (recipe$-count recipe))])
+         (define inputs
+           (for/fold ([result null])
+                     ([i (recipe$-inputs recipe)])
+             (cons (format "~a ~a" (* (cdr i) reps) (item->label (car i))) result)))
+         (new message%
+              [parent inputs-column]
+              [label (string-append " <== " (string-join inputs ", "))])))]))
+
+(define (show-inventory inventory container)
+  (define qty (new vertical-pane% [parent container] [alignment '(right top)] [stretchable-width #f]))
+  (define name (new vertical-pane% [parent container] [alignment '(left top)]))
+  (for ([key (sort (hash-keys inventory) (λ (i1 i2) (symbol<? (item$-name i1) (item$-name i2))))])
+    (define count (inventory-available inventory key #f))
+    (when count
+      (new message% [parent qty] [label (number->string count)])
+      (new message% [parent name] [label (item->label key)]))))
+
+(define (clear-recipe-finder-output)
+       (send recipe-finder-result-area change-children (λ (ignored) null)))
 
 ;;;
 ;;; Top-level window
@@ -301,11 +354,15 @@
 ;;
 ;; Recipe Finder panel, one of the tab choices
 ;;
-(define recipe-finder             (new vertical-panel% [parent tab-data-area]))
+(define recipe-finder
+  (new vertical-panel%
+       [parent tab-data-area]
+       [alignment '(left top)]))
 (define recipe-finder-input-area
   (new horizontal-pane%
        [parent recipe-finder]
-       [alignment '(left top)]))
+       [alignment '(left top)]
+       [stretchable-height #f]))
 (define recipe-finder-output-selection-area
   (new group-box-panel%
        [parent recipe-finder-input-area]
@@ -313,21 +370,36 @@
        [alignment '(left top)]
        [stretchable-width #f]
        [stretchable-height #f]))
-(define output-item
+(define recipe-finder-output-item
   (new choice%
        [parent recipe-finder-output-selection-area]
        [label "Item"]
        [choices (map item-name->label (get-sorted-item-names))]))
-(define output-quantity
+(define recipe-finder-output-quantity
   (new text-field%
        [parent recipe-finder-output-selection-area]
        [label "Quantity"]
        [init-value "1"]))
-(define find-recipes-button
+(define recipe-finder-buttons-area
+  (new horizontal-pane%
+       [parent recipe-finder]
+       [alignment '(center top)]
+       [stretchable-height #f]))
+(define recipe-finder-go
   (new button%
-       [parent recipe-finder-output-selection-area]
-       [label "Find Recipes"]
+       [parent recipe-finder-buttons-area]
+       [label "Search"]
        [callback (λ (b e) (find-recipes))]))
+(define recipe-finder-clear
+  (new button%
+       [parent recipe-finder-buttons-area]
+       [label "Clear"]
+       [callback (λ (b e) (clear-recipe-finder-output))]))
+(define recipe-finder-result-area
+  (new vertical-panel%
+       [parent recipe-finder]
+       #;[style '(auto-vscroll auto-hscroll)]))
+
 
 ;;
 ;; Vector of tab panel choices.

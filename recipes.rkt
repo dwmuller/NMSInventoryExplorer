@@ -36,7 +36,7 @@
 ;;; Helper methods for defining recipes.
 
 ;; Input definitions can simply name an item, with an implicit quantity of "one", or they can be
-;; a (quantity name) list. This function normalizes a definition to a (name quantity) list.
+;; a (quantity name) list. This function normalizes a definition to a (name . quantity) pair.
 (define (canonicalize-input-form input)
   (match input
     [(list (? symbol? item) (? integer? n))
