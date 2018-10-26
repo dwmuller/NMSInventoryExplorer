@@ -23,6 +23,8 @@
     [min-width 0]
     [min-height 0]))
 
+(define logging #f)
+
 ;;
 ;; A class to display data in a grid, optionally scrollable,
 ;; with optional column and row headers.
@@ -71,7 +73,7 @@
           [(init-row-headers row-headers) #f]
 
           ; Border around this entire GUI element.
-          [(init-border border) 0]
+          [border 0]
           
           ; Spacing around each data element.
           [(init-spacing spacing) 0]
@@ -100,7 +102,6 @@
     ; back once for each datum, in any order.
     ;
     (define visit-data data-visitor)
-    (define border init-border)
     ;
     ; Spacing to apply between data items in the data area, and by implication
     ; between row and column headers.
@@ -158,6 +159,10 @@
                [min-width init-min-width]
                [min-height init-min-height])
 
+    ;;;
+    ;;; Contained GUI elements
+    ;;;
+    
     (define column-header-area
       (new horizontal-pane%
            [parent this]
@@ -178,9 +183,7 @@
            [parent column-header-area]
            [min-width (if (member 'vscroll style) 15 0)]
            [stretchable-width #f]))
-
     (define lower-area (new horizontal-pane% [parent this]))
-
     (define row-header-area
       (new vertical-pane%
            [parent lower-area]
@@ -196,55 +199,43 @@
            [parent row-header-area]
            [min-height (if (member 'hscroll style) 15 0)]
            [stretchable-height #f]))
-    
     (define my-data-canvas%
       (class canvas%
         (define/override (on-scroll event)
-          (send this refresh)
           (paint-column-header-area)
           (paint-row-header-area)
+          (send this refresh)
           (super on-scroll event))
-        (super-new)))
-      
+        (super-new)))      
     (define data-area
       (new my-data-canvas%
            [parent lower-area]
            [paint-callback (λ (canvas dc) (paint-data-container))]
            [style (list* 'no-focus (set-intersect '(vscroll hscroll) style))]))
 
-    (define (get-vars-for-column col)
-      (define vars (or (and column-vars
-                            (< col (length column-vars))
-                            (list-ref column-vars col))
-                       default-column-vars))
-      (define (get sym)
-        (car (or (dict-ref vars sym #f)
-                 (dict-ref default-column-vars sym #f)
-                 (dict-ref static-default-column-vars sym))))
-      (values (get 'alignment)
-              (get 'style)
-              (get 'min-width)
-              (get 'min-height)))
-
+    ;;;
+    ;;; Internal helper functions.
+    ;;;
+    
+    ;;
+    ;; Retrieve an initialization variable for the referenced column.
+    ;;
     (define (get-column-var col-index sym)
-      (define vars (or (and column-vars
-                            (< col-index (length column-vars))
-                            (list-ref column-vars col-index))
-                       default-column-vars))
-      (car (or (dict-ref vars sym #f)
+      ; The value may come from a column-specifc set of vars,
+      ; the user-configured default column vars, or the static
+      ; default set of vars. Only the last is guaranteed to
+      ; have an entry for a supported var.
+      (define vars (and column-vars
+                        (< col-index (length column-vars))
+                        (list-ref column-vars col-index)))
+      (car (or (and vars (dict-ref vars sym #f))
                (dict-ref default-column-vars sym #f)
                (dict-ref static-default-column-vars sym))))
 
-    (define (element-extents dc element)
-      (cond
-        [(string? element)
-         (define-values (w h d a) (send dc get-text-extent element))
-         (values (inexact->exact w) (inexact->exact h))]))
-
-    ;
-    ; Calculates a header area's dimensions when all labels
-    ; are visible.
-    ;
+    ;;
+    ;; Calculates a header container's dimensions when all labels
+    ;; are visible.
+    ;;
     (define (min-header-dimensions container labels)
       ; The only sane way to do this is to temporarily make all
       ; labels visible. The dimensions are affected by the children's
@@ -261,27 +252,45 @@
       (send container end-container-sequence)
       (values gw gh))
 
+    ;;
+    ;; Given a set of header labels, return the largest graphical
+    ;; minimum width.
+    ;;
     (define (labels-width labels)
       (for/fold ([width 0])
                 ([label labels])
         (define-values (w h) (send label get-graphical-min-size))
         (max width w)))
 
+    ;;
+    ;; Given a set of header labels, return the largest graphical
+    ;; minimum height.
+    ;;
     (define (labels-height labels)
       (for/fold ([height 0])
                 ([label labels])
         (define-values (w h) (send label get-graphical-min-size))
         (max height h)))
         
-
+    ;;
+    ;; Based on the data (and not headers), figure out
+    ;; the largest width and height of a cell, and the
+    ;; highest row and column indexes associated with any
+    ;; datum.
+    ;;
     (define (calc-data-extents)
+      (define dc (send data-area get-dc))
+      (define (element-extents element)
+        (cond
+          [(string? element)
+           (define-values (w h d a) (send dc get-text-extent element))
+           (values (inexact->exact w) (inexact->exact h))]))
       (define max-width 0)
       (define max-height 0)
       (define max-row (- (length row-labels) 1))
       (define max-col (- (length column-labels) 1))
-      (define dc (send data-area get-dc))
       (define (visitor row col datum)
-        (define-values (w h) (element-extents dc datum))
+        (define-values (w h) (element-extents datum))
         (set! max-row (max max-row row))
         (set! max-col (max max-col col))
         (set! max-width (max max-width w))
@@ -344,41 +353,42 @@
 
     (define (update-dimensions)
       (send this begin-container-sequence)
-
       ;
       ; Get the overall data cell height and width, without spacing.
       ;
       (define-values (max-height max-width nrows ncols) (calc-data-extents))
       (set! effective-row-count nrows)
       (set! effective-column-count ncols)
-      (printf "Initial cell h/w: (~a ~a)~n" max-height max-width)
-
-      (set! effective-cell-height (max max-height (labels-height row-labels)))
-      (set! effective-cell-width  (max max-width (labels-width column-labels)))      
-      (printf "Effective cell h/w: (~a ~a)~n" effective-cell-height effective-cell-width)
-      
+      (when logging
+        (printf "Initial cell h/w: (~a ~a)~n" max-height max-width))
       ;
-      ; We need separate width and height calculations for the row and column headers, respectively,
+      ; Calculate and stash the effective data cell sizes. This is used
+      ; in numerous places.
+      ;
+      (set! effective-cell-height (max max-height (labels-height row-labels)))
+      (set! effective-cell-width  (max max-width (labels-width column-labels)))
+      (when logging
+        (printf "Effective cell h/w: (~a ~a)~n" effective-cell-height effective-cell-width))
+      ;
+      ; We need width and height calculations for the row and column headers, respectively,
       ; since those don't have to match the data cell sizes.
       ;
       (define-values (ch-max-width ch-max-height) (min-header-dimensions column-header-container column-labels))
       (define-values (rh-max-width rh-max-height) (min-header-dimensions row-header-container row-labels))
-      (printf "Column header max height: ~a~n" ch-max-height)
-      (printf "Row    header max width : ~a~n" rh-max-width)
-
+      (when logging
+        (printf "Column header max height: ~a~n" ch-max-height)
+        (printf "Row    header max width : ~a~n" rh-max-width))
       ;
       ; The row header spacer, a blank space in the upper left corner, needs to match the
       ; width of the row headers. (Which can be zero!)
       ; 
       (send row-header-spacer min-width rh-max-width)
-
       ;
       ; Adjust the header areas themselves to accomodate the widest or tallest label.
       ; We don't want this dimension to shift when scrolling hides some labels.
       ;
       (send row-header-area min-width rh-max-width)
       (send column-header-area min-height ch-max-height)
-
       ;
       ; Adjust each label to have the same width or height as all cells do.
       ;
@@ -391,6 +401,11 @@
       (send this refresh)
       (send this end-container-sequence))
 
+    ;;
+    ;; Update the scrollbar settings.
+    ;; Must be done when the viewable are size changes, or when the data changes.
+    ;; Optionally reset the scrollbar positions.
+    ;;
     (define (update-scrollbars [reset-pos #f])
       (define first-visible-col (if reset-pos 0 (send data-area get-scroll-pos 'horizontal)))
       (define first-visible-row (if reset-pos 0 (send data-area get-scroll-pos 'vertical)))
@@ -424,7 +439,10 @@
       ;(printf "data w/h: (~a ~a)~n" total-data-width total-data-height)
       (send this refresh))
       
-      
+
+    ;;;
+    ;;; Methods
+    ;;;
     
     (define/override (on-size width height)
       (update-scrollbars)
@@ -465,6 +483,10 @@
                   ph)
                 null))
       (update-dimensions))
+
+    ;;;
+    ;;; Final initialization steps.
+    ;;;
     
     (set-column-headers init-column-headers)
     (set-row-headers init-row-headers)
