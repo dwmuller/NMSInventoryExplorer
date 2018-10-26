@@ -265,22 +265,28 @@
 (add-quick-check-box-buttons! chest-selections chest-check-boxes)
 
 
+(define (select-tab panel event)
+  (when (eq? 'tab-panel (send event get-event-type))
+    (define selected (send panel get-selection))
+    (send tab-data-area active-child (vector-ref tab-panels selected))))
+
 ;;
 ;; Tab area to display inventory details, totals, and related operations.
 ;;
 (define tab-area
   (new tab-panel%
        [parent main-panel]
+       [callback select-tab]
        [choices '("Inventories" "Recipe Finder")]))
 
 (define tab-data-area
   (new panel:single% [parent tab-area]))
 
-;
-; Inventories panel, one of the tab choices.
-;
-; Shows totals, and details in currently selected inventories.
-;
+;;
+;; Inventories panel, one of the tab choices.
+;;
+;; Shows totals, and details in currently selected inventories.
+;;
 (define inventories-grid
   (new data-table%
        [parent tab-data-area]
@@ -289,11 +295,15 @@
        [spacing 6]
        [default-column-vars '([alignment (right center)])]))
 
-;
-; Recipe Finder panel, one of the tab choices
-;
+;;
+;; Recipe Finder panel, one of the tab choices
+;;
 (define recipe-finder (new vertical-panel% [parent tab-data-area]))
 
+;;
+;; Vector of tab panel choices.
+;;
+(define tab-panels (vector inventories-grid recipe-finder))
 
 (load-data! (get-latest-save-file-path))
 (send tab-data-area active-child inventories-grid)
