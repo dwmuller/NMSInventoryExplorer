@@ -28,8 +28,8 @@
 (define (inventory-key->label key)
   (match (car key)
     ['exosuit (match (cdr key)
-                [0 "Exosuit General"]
-                [1 "Exosuit Cargo"])]
+                [0 "Exo General"]
+                [1 "Exo Cargo"])]
     ['freighter (match (cdr key)
                   [0 "Freighter"])]
     ['ship    (list-ref (game-data-starships current) (cdr key))]
@@ -282,7 +282,7 @@
        [parent tab-data-area]
        [data-visitor visit-inventory-data]
        [style '(vscroll hscroll)]
-       [spacing 2]
+       [spacing 6]
        [default-column-vars '([alignment (right center)])]))
 
 ;
