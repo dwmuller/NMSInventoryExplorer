@@ -15,11 +15,12 @@ frustrated sorting through my inventory in the game No Man's Sky, and
 figuring what chain of crafting recipes I could apply to create a
 particular product.
 
-## Implementation
+## Implementation Notes
 
 The software is written in [Racket], and uses its native GUI library.
 To run the software yourself, download and install the DrRacket IDE,
-open the gui.rkt file, and press F5 or click the Run button.
+open the NMSInventoryExplorer.rkt file, and press F5 or click the Run
+button.
 
 The IDE and its debugging tools are capable but not wonderful. But
 with it, you can get programming very quickly, and the documentation
@@ -35,12 +36,22 @@ TODO:
 * Support older versions (without obfuscated JSON tags).
 * Allow selection of file, include a test file in project.
 
+## Building
+
+To build a release, simply open the NMSInventoryExplorer.rkt file with
+DrRacket, and choose menu item "Racket", then "Create
+Executable...". In the dialog, select "Distribution" as the "Type",
+and "GRacket" as the "Base".  Make sure to check "Embed DLLs in the
+executable?"  Click "Create" and wait. You'll end up with a zip file
+containing the executable and supporting subdirectories. Total
+unpacked size is on the order of 45MB.
+
 ## State of the software
 
-Getting a workable data grid to display all selected inventories
-turned out to be much harder than expected. (I'm no UI programmer.)
-I have something working, sort of. See the lengthy TODO list at the
-top of data-table.rkt.
+You can currently select the inventories whose contents you want to
+view, and see the contents of selected inventories in a reasonably
+compact and flexible form. The UI could use a little more tweaking
+to make the data grid easier on the eyes.
 
 Code exists for doing heuristic search for recipe chains (given a target 
 item and count) that can be satisfied by a given inventory, but has not
