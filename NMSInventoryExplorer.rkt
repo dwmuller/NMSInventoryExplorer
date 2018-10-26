@@ -13,11 +13,9 @@
          "search.rkt"
          "recipes.rkt")
 
-; TODO: Fix recipe search failures.
-; TODO: Cull items with no recipes from output selection choice box.
 ; TODO: Show recipe list's total inventory usage.
 ; TODO: Enhance recipe search to produce multiple results.
-
+; TODO? Improve ranking of failed recipes - prefer "common" input items?
 
 (define (inventory-type? sym)
   (member sym '(exosuit freighter ship vehicle chest)))
@@ -165,6 +163,56 @@
     (define selected (send panel get-selection))
     (send tab-data-area active-child (vector-ref tab-panels selected))))
 
+(define (show-recipe-sequence best deficit parent)  
+  (when (not (inventory-empty? deficit))
+    (define output
+      (new group-box-panel%
+           [parent parent]
+           [label "Missing inputs"]
+           [stretchable-height #f]))
+    (send output set-orientation #t)
+    (show-inventory deficit output))
+  (define output-area
+    (new horizontal-panel%
+         [parent (new group-box-panel%
+                      [parent recipe-finder-result-area]
+                      [label "Steps"])]
+         [style '(auto-vscroll)]))
+  (define outputs-column (new vertical-pane%
+                              [parent output-area]
+                              [alignment '(left center)]
+                              [stretchable-width #f]))
+  (define inputs-column  (new vertical-pane%
+                              [parent output-area]
+                              [alignment '(left center)]
+                              [stretchable-width #f]))
+  (for ([app best])
+    (define recipe (car app))
+    (define reps (cdr app))
+    (new check-box%
+         [parent outputs-column]
+         [label (format "~aX ~a ~a ~a"
+                        reps
+                        (recipe$-action recipe)
+                        (item->label (recipe$-output recipe))
+                        (recipe$-count recipe))]
+         [stretchable-height #t])
+    (define inputs
+      (for/fold ([result null])
+                ([i (recipe$-inputs recipe)])
+        (cons (format "~a ~a" (* (cdr i) reps) (item->label (car i))) result)))
+    ; The message% object is wrapped in a pane to get centering behavior when
+    ; the Steps area stretches. The left part of the steps already exhibits this behavior,
+    ; so this keeps the two parts aligned. This lets people stretch out the recipe steps
+    ; checklist if they want.
+    (new message%
+         [parent (new pane%
+                      [parent inputs-column]
+                      [stretchable-height #t]
+                      [alignment '(left center)])]
+         [label (string-append " <== " (string-join inputs ", "))])
+    ))
+
 (define (find-recipes)
   (define target-item (label->item (send recipe-finder-output-item get-string (send recipe-finder-output-item get-selection))))
   (define target-count (string->number (send recipe-finder-output-quantity get-value)))
@@ -175,46 +223,11 @@
     [else
      (clear-recipe-finder-output)
      (define-values (best deficit) (get-best-recipe-sequence target-item target-count total-of-selected-inventories))
-     (when best
-       (when (not (inventory-empty? deficit))
-         (define output
-           (new group-box-panel%
-              [parent recipe-finder-result-area]
-              [label "Missing inputs"]
-              [stretchable-height #f]))
-         (send output set-orientation #t)
-         (show-inventory deficit output))
-       (define output-area
-         (new horizontal-panel%
-              [parent (new group-box-panel%
-                           [parent recipe-finder-result-area]
-                           [label "Steps"])]
-              [style '(auto-vscroll)]))
-       (define outputs-column (new vertical-pane%
-                                   [parent output-area]
-                                   [alignment '(left center)]
-                                   [stretchable-width #f]))
-       (define inputs-column  (new vertical-pane%
-                                   [parent output-area]
-                                   [alignment '(left center)]
-                                   [stretchable-width #f]))
-       (for ([app best])
-         (define recipe (car app))
-         (define reps (cdr app))
-         (new check-box%
-              [parent outputs-column]
-              [label (format "~aX ~a ~a ~a"
-                             reps
-                             (recipe$-action recipe)
-                             (item->label (recipe$-output recipe))
-                             (recipe$-count recipe))])
-         (define inputs
-           (for/fold ([result null])
-                     ([i (recipe$-inputs recipe)])
-             (cons (format "~a ~a" (* (cdr i) reps) (item->label (car i))) result)))
+     (if (not (null? best))
+         (show-recipe-sequence best deficit recipe-finder-result-area)
          (new message%
-              [parent inputs-column]
-              [label (string-append " <== " (string-join inputs ", "))])))]))
+              [parent recipe-finder-result-area]
+              [label "You have that in inventory already!"]))]))
 
 (define (show-inventory inventory container)
   (define qty (new vertical-pane% [parent container] [alignment '(right top)] [stretchable-width #f]))
@@ -226,7 +239,7 @@
       (new message% [parent name] [label (item->label key)]))))
 
 (define (clear-recipe-finder-output)
-       (send recipe-finder-result-area change-children (λ (ignored) null)))
+  (send recipe-finder-result-area change-children (λ (ignored) null)))
 
 ;;;
 ;;; Top-level window
@@ -374,7 +387,7 @@
   (new choice%
        [parent recipe-finder-output-selection-area]
        [label "Item"]
-       [choices (map item-name->label (get-sorted-item-names))]))
+       [choices (map item-name->label (sort (get-craftable-item-names) symbol<?))]))
 (define recipe-finder-output-quantity
   (new text-field%
        [parent recipe-finder-output-selection-area]

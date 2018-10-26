@@ -11,6 +11,8 @@
 (provide get-best-recipe-sequence
          display-best-recipe-sequence) 
 
+(define logging #t)
+
 ;;; State
 ;;;
 ;;; A state represents a potential sequence of recipe applications and the
@@ -28,14 +30,16 @@
 ;;; but can play a role in preferring a state that performs that recipe earlier in the sequence,
 ;;; if the extra input can be used.
 
-(struct state (; (recipe . iterations) in approximate order:
+(struct state (; heuristic cost
+               cost
+               ; (recipe . iterations) in approximate order:
                recipe-applications
                ; Deficit at start of sequence:
                deficit)
   #:transparent)
 
 (define (make-state recipe-applications deficit initial)
-  (state recipe-applications deficit))
+  (state (calc-cost recipe-applications deficit initial) recipe-applications deficit))
 
 (define (state-closed? s)
   (inventory-empty? (state-deficit s)))
@@ -52,12 +56,12 @@
                      (ceiling (/ (* iterations (cdr input)) 250)))
                    (recipe$-inputs recipe)))))
 
-(define (state-cost state initial)
-  (+ (* 0 (length (state-recipe-applications state)))
-     (* 10 (foldl (λ (a sum) (+ sum (steps a))) 0 (state-recipe-applications state)))
-     (* 0 (foldl (λ (a sum) (+ sum (cdr a))) 0 (state-recipe-applications state)))
-     (* 100 (hash-count (state-deficit state)))
-     (* 0 (apply + (hash-values (state-deficit state))))))
+(define (calc-cost recipe-applications deficit initial)
+  (+ (* 0 (length recipe-applications))
+     (* 10 (foldl (λ (a sum) (+ sum (steps a))) 0 recipe-applications))
+     (* 0 (foldl (λ (a sum) (+ sum (cdr a))) 0 recipe-applications))
+     (* 100 (hash-count deficit))
+     (* 0 (apply + (hash-values deficit)))))
 
 ;;; Cost-based search for a sequence of recipe applications to produce a quantity of an item.
 ;;;
@@ -94,7 +98,7 @@
       (withdraw item count inventory deficit)))
       
   (generator ()
-             (for ([(target-item count-needed) (state-deficit s)])
+             (for* ([(target-item count-needed) (state-deficit s)])
                (for ([recipe (get-recipes-for target-item)])
                  ;; When calculating the repetitions of a recipe, the net count takes
                  ;; into account that it may use its own output as an input.
@@ -110,10 +114,33 @@
                          initial-inventory))))
              (void)))
 
-(define (get-best-recipe-sequence item num initial-inventory)
+(define (debug-monitor iters expanded pending solved)
+  (when (and logging (zero? (modulo iters 100)))
+    (printf "Iteration ~a: Expanded: ~a, Pending: ~a, Solutions: ~a~n"
+            iters expanded pending solved)))
 
+;;
+;; Search for the best available recipe chain to produce {num} {item}s.
+;;
+;; -> (list recipe-application ...) deficit-inventory
+;; recipe-application: (cons recipe$? integer?)
+;;
+;; item: craftable-item? (see recipes.rkt)
+;;
+;; If deficit-inventory is empty, then the recipe chain can be executed entirely
+;; from the initial inventory and intermediate products.
+;;
+;; If no recipe chain at all can be found, returns (values #f #f).
+;; This should only happen if the requested item is not craftable.
+;;
+;; An empty recipe sequence indicates that the request can be satisfied
+;; from initial inventory.
+;; 
+(define (get-best-recipe-sequence item num initial-inventory [continue? (if logging debug-monitor (λ (ignored ...) #t))])  
+  (when (not (craftable-item? item))
+    (raise-argument-error 'not-craftable "(craftable-item? item)" item))
   (define (states<=? s1 s2)
-    (<= (state-cost s1 initial-inventory) (state-cost s2 initial-inventory)))
+    (<= (state-cost s1) (state-cost s2)))
   (define (heap-empty? heap) (zero? (heap-count heap)))
   (define (heap-any? heap)  (not (zero? (heap-count heap))))
 
@@ -124,12 +151,17 @@
   (define expanded-states (make-heap states<=?))
   (define closed-states (make-heap states<=?))
 
-  (for ([s (in-producer (expand-state initial-state initial-inventory final-withdrawl) (void))])
-         (heap-add! pending-states s))
+  (heap-add! pending-states initial-state)
   
-  ; Repeatedly expand the best state into next states by
-  ; adding alternate recipe applications.
-  ; State cost increases as applications are added, so
+  ; On each iteration, pop the best pending state and examine it.
+  ; If it's closed (i.e. it represents a recipe sequence that can
+  ; be executed against the initial inventory), add it to the closed
+  ; states. Otherwise expand it into all next possible states, each
+  ; of which has starts with another possible recipe application to
+  ; generate something that's still missing in order to execute
+  ; the best state's recipe sequence.
+  ;
+  ; State cost increases as recipe applications are added, so
   ; any closed states (those with recipe chains that can be
   ; satisfied from inventory) will eventually bubble to the
   ; top of the heap.
@@ -137,7 +169,6 @@
   ; If we iterate too long, we return the best alternative,
   ; but the second result will indicate what we're missing to
   ; execute that recipe chain.
-
   ;
   ; TODO: Provide alternatives - ties or close?
   ; TODO: Continue past first closed state to find better solutions?
@@ -145,6 +176,7 @@
   (for ([i (in-range 10000)]
         #:unless (zero? (heap-count pending-states)))
     #:break (not (zero? (heap-count closed-states)))
+    #:break (not (continue? i (heap-count expanded-states) (heap-count pending-states) (heap-count closed-states)))
     (define best (heap-min pending-states))
     (heap-remove-min! pending-states)
     (cond
@@ -153,19 +185,33 @@
       [else
        (heap-add! expanded-states best)
        (for ([s (in-producer (expand-state best initial-inventory final-withdrawl) (void))])
-         (heap-add! pending-states s))])
-    (when (zero? (modulo i 100))
-      (printf "~s: ~s ~s~n" i (heap-count expanded-states) (heap-count pending-states))))
+         (heap-add! pending-states s))]))
+  
+  ; Now interpret the results.
   (define best
     (cond
       [(heap-any?   closed-states)    (heap-min closed-states)]
-      [(heap-empty? pending-states)   (heap-min expanded-states)]
       [else
-       (define e (heap-min expanded-states))
-       (define p (heap-min pending-states))
-       (if (states<=? e p) e p)]))
-  (values (state-recipe-applications best)
-          (state-deficit best)))
+       ; If the best expanded state has an empty sequence, discard it,
+       ; because it's trivial. ("Make X by acquiring X.")
+       (when (and (heap-any? expanded-states)
+                  (null? (state-recipe-applications (heap-min expanded-states))))
+         (heap-remove-min! expanded-states))
+       ; Now choose the best state available from either expanded or pending.
+       (define e (and (heap-any? expanded-states) (heap-min expanded-states)))
+       (define p (and (heap-any? pending-states) (heap-min pending-states)))
+       (cond
+         [(and e p) (if (states<=? e p) e p)]
+         [e e]
+         [p p]
+         [else (raise-result-error 'unexpected-search-result
+                                   "(or (heap-any? closed-states expanded-states pending-states))"
+                                   closed-states
+                                   expanded-states
+                                   pending-states)])]))
+  
+  (values (and best (state-recipe-applications best))
+          (and best (state-deficit best))))
 
 ;;; Display functions for development
 (define (display-recipe-application app)
