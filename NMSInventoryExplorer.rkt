@@ -9,20 +9,13 @@
 (require "save-file.rkt"
          "items.rkt"
          "inventory.rkt"
-         "data-table.rkt")
+         "data-table.rkt"
+         "search.rkt"
+         "recipes.rkt")
 
-; TODO: Wire up recipe searches.
-;       Input: item & count, # of results?
-;       Output: Recipe chains, total inventory usage, total inventory shortage on failure.
-
-
-(define (inventory-type? sym)
-  (member sym '(exosuit freighter ship vehicle chest)))
-
-(define (inventory-key? key)
-  (match key
-    [(list (? inventory-type?) (? integer?)) #t]
-    [else #f]))
+; TODO: Show recipe list's total inventory usage.
+; TODO: Enhance recipe search to produce multiple results.
+; TODO? Improve ranking of failed recipes - prefer "common" input items?
 
 ;;;
 ;;; (inventory-key->label key) -> string?
@@ -39,10 +32,6 @@
     ['ship    (list-ref (game-data-starships current) (cdr key))]
     ['vehicle (list-ref (game-data-vehicles current) (cdr key))]
     ['chest   (format "Storage ~a" (cdr key))]))
-
-(define (item->label item)
-  ;; TODO: Prettify item name.
-  (symbol->string (item$-name item)))
 
 (define (inventory-selection-changed . ignored)
   (set! total-of-selected-inventories (calc-totals-inventory))
@@ -164,8 +153,90 @@
   (visit-inventory-column total-of-selected-inventories 0)
   (for ([ki (filter (λ (e) (member (car e) selected-keys)) keyed-inventories)]
         [col-index (in-naturals 1)])
-    (visit-inventory-column (cdr ki) col-index))
-  )
+    (visit-inventory-column (cdr ki) col-index)))
+
+(define (select-tab panel event)
+  (when (eq? 'tab-panel (send event get-event-type))
+    (define selected (send panel get-selection))
+    (send tab-data-area active-child (vector-ref tab-panels selected))))
+
+(define (show-recipe-sequence best deficit parent)  
+  (when (not (inventory-empty? deficit))
+    (define output
+      (new group-box-panel%
+           [parent parent]
+           [label "Missing inputs"]
+           [stretchable-height #f]))
+    (send output set-orientation #t)
+    (show-inventory deficit output))
+  (define output-area
+    (new horizontal-panel%
+         [parent (new group-box-panel%
+                      [parent recipe-finder-result-area]
+                      [label "Steps"])]
+         [style '(auto-vscroll)]))
+  (define outputs-column (new vertical-pane%
+                              [parent output-area]
+                              [alignment '(left center)]
+                              [stretchable-width #f]))
+  (define inputs-column  (new vertical-pane%
+                              [parent output-area]
+                              [alignment '(left center)]
+                              [stretchable-width #f]))
+  (for ([app best])
+    (define recipe (car app))
+    (define reps (cdr app))
+    (new check-box%
+         [parent outputs-column]
+         [label (format "~aX ~a ~a ~a"
+                        reps
+                        (recipe$-action recipe)
+                        (item->label (recipe$-output recipe))
+                        (recipe$-count recipe))]
+         [stretchable-height #t])
+    (define inputs
+      (for/fold ([result null])
+                ([i (recipe$-inputs recipe)])
+        (cons (format "~a ~a" (* (cdr i) reps) (item->label (car i))) result)))
+    ; The message% object is wrapped in a pane to get centering behavior when
+    ; the Steps area stretches. The left part of the steps already exhibits this behavior,
+    ; so this keeps the two parts aligned. This lets people stretch out the recipe steps
+    ; checklist if they want.
+    (new message%
+         [parent (new pane%
+                      [parent inputs-column]
+                      [stretchable-height #t]
+                      [alignment '(left center)])]
+         [label (string-append " <== " (string-join inputs ", "))])
+    ))
+
+(define (find-recipes)
+  (define target-item (label->item (send recipe-finder-output-item get-string (send recipe-finder-output-item get-selection))))
+  (define target-count (string->number (send recipe-finder-output-quantity get-value)))
+  (cond
+    [(or (not target-count)
+         (not (positive? target-count)))
+     (message-box "Input error" "The output quantity must be a positive integer." frame '(stop ok))]
+    [else
+     (clear-recipe-finder-output)
+     (define-values (best deficit) (get-best-recipe-sequence target-item target-count total-of-selected-inventories))
+     (if (not (null? best))
+         (show-recipe-sequence best deficit recipe-finder-result-area)
+         (new message%
+              [parent recipe-finder-result-area]
+              [label "You have that in inventory already!"]))]))
+
+(define (show-inventory inventory container)
+  (define qty (new vertical-pane% [parent container] [alignment '(right top)] [stretchable-width #f]))
+  (define name (new vertical-pane% [parent container] [alignment '(left top)]))
+  (for ([key (sort (hash-keys inventory) (λ (i1 i2) (symbol<? (item$-name i1) (item$-name i2))))])
+    (define count (inventory-available inventory key #f))
+    (when count
+      (new message% [parent qty] [label (number->string count)])
+      (new message% [parent name] [label (item->label key)]))))
+
+(define (clear-recipe-finder-output)
+  (send recipe-finder-result-area change-children (λ (ignored) null)))
 
 ;;;
 ;;; Top-level window
@@ -271,16 +342,17 @@
 (define tab-area
   (new tab-panel%
        [parent main-panel]
+       [callback select-tab]
        [choices '("Inventories" "Recipe Finder")]))
 
 (define tab-data-area
   (new panel:single% [parent tab-area]))
 
-;
-; Inventories panel, one of the tab choices.
-;
-; Shows totals, and details in currently selected inventories.
-;
+;;
+;; Inventories panel, one of the tab choices.
+;;
+;; Shows totals, and details in currently selected inventories.
+;;
 (define inventories-grid
   (new data-table%
        [parent tab-data-area]
@@ -289,11 +361,59 @@
        [spacing 6]
        [default-column-vars '([alignment (right center)])]))
 
-;
-; Recipe Finder panel, one of the tab choices
-;
-(define recipe-finder (new vertical-panel% [parent tab-data-area]))
+;;
+;; Recipe Finder panel, one of the tab choices
+;;
+(define recipe-finder
+  (new vertical-panel%
+       [parent tab-data-area]
+       [alignment '(left top)]))
+(define recipe-finder-input-area
+  (new horizontal-pane%
+       [parent recipe-finder]
+       [alignment '(left top)]
+       [stretchable-height #f]))
+(define recipe-finder-output-selection-area
+  (new group-box-panel%
+       [parent recipe-finder-input-area]
+       [label "Output selection"]
+       [alignment '(left top)]
+       [stretchable-width #f]
+       [stretchable-height #f]))
+(define recipe-finder-output-item
+  (new choice%
+       [parent recipe-finder-output-selection-area]
+       [label "Item"]
+       [choices (map item-name->label (sort (get-craftable-item-names) symbol<?))]))
+(define recipe-finder-output-quantity
+  (new text-field%
+       [parent recipe-finder-output-selection-area]
+       [label "Quantity"]
+       [init-value "1"]))
+(define recipe-finder-buttons-area
+  (new horizontal-pane%
+       [parent recipe-finder]
+       [alignment '(center top)]
+       [stretchable-height #f]))
+(define recipe-finder-go
+  (new button%
+       [parent recipe-finder-buttons-area]
+       [label "Search"]
+       [callback (λ (b e) (find-recipes))]))
+(define recipe-finder-clear
+  (new button%
+       [parent recipe-finder-buttons-area]
+       [label "Clear"]
+       [callback (λ (b e) (clear-recipe-finder-output))]))
+(define recipe-finder-result-area
+  (new vertical-panel%
+       [parent recipe-finder]
+       #;[style '(auto-vscroll auto-hscroll)]))
 
+;;
+;; Vector of tab panel choices.
+;;
+(define tab-panels (vector inventories-grid recipe-finder))
 
 (load-data! (get-latest-save-file-path))
 (send tab-data-area active-child inventories-grid)

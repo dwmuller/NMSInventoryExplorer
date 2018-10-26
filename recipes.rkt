@@ -6,7 +6,12 @@
 (require "utility.rkt")
 (require "items.rkt")
 
-(provide (struct-out recipe$) get-recipes-for get-recipes-using canonicalize-input-form)
+(provide (struct-out recipe$)
+         get-recipes-for
+         get-recipes-using
+         canonicalize-input-form
+         get-craftable-item-names
+         craftable-item?)
 
 (struct recipe$ (action output count net-count inputs) #:transparent)
 (define (make-recipe action output-name count inputs)
@@ -32,11 +37,17 @@
 (define (get-recipes-using item-ref)
   (define item (if (item$? item-ref) item-ref (get-item item-ref)))
   (hash-ref recipes-by-input item '()))
+
+(define (get-craftable-item-names)
+  (map item$-name (hash-keys recipes-by-output)))
+
+(define (craftable-item? item)
+  (hash-has-key? recipes-by-output item))
   
 ;;; Helper methods for defining recipes.
 
 ;; Input definitions can simply name an item, with an implicit quantity of "one", or they can be
-;; a (quantity name) list. This function normalizes a definition to a (name quantity) list.
+;; a (quantity name) list. This function normalizes a definition to a (name . quantity) pair.
 (define (canonicalize-input-form input)
   (match input
     [(list (? symbol? item) (? integer? n))

@@ -6,9 +6,23 @@
 
 (provide (struct-out item$)
          get-item
-         get-item-by-save-id)
+         get-item-by-save-id
+         get-sorted-item-names
+         item-name->label
+         item->label
+         label->item)
 
 (struct item$ (name id base-value flags) #:transparent)
+
+(define (item-name->label sym)
+  ;; TODO: Prettify item name.
+  (symbol->string sym))
+
+(define (item->label item)
+  (item-name->label (item$-name item)))
+
+(define (label->item label)
+  (get-item (string->symbol label)))
 
 ; This list is not complete. Each entry lists a symbol to represent
 ; a kind of item in the game, an optional base value, and an optional
@@ -217,4 +231,7 @@
   (unless match (raise-argument-error 'get-item-by-save-id "item save identifier in form ^id(#num)?" id))
   (define key (second match))
   (hash-ref item-by-save-id key default))
+
+(define (get-sorted-item-names)
+  (sort (hash-keys items) symbol<?))
 

@@ -7,7 +7,8 @@
 (provide (struct-out game-data)
          get-default-data-path
          get-latest-save-file-path
-         get-game-data)
+         get-game-data
+         inventory-key?)
 
 ;;;
 ;;; A struct representing the data that we snarfed from a save file.
