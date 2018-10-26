@@ -6,8 +6,6 @@
 (provide data-table%)
 
 ; TODO: Font selection in canvases.
-; TODO: Header scrolling now works, but is totally different for row vs. column headers. After the above refinements, choose one.
-; TODO: Refresh causes vscroll (& hscroll?) position to reset to zero. May need before/after canvas sizes to fix.
 ; TODO: Check initialization variable contracts.
 ; TODO? Support deleted (hidden) cols.
 ; TODO? Support deleted (hidden) rows.
@@ -119,8 +117,12 @@
     (define default-column-vars init-default-column-vars)
     ;
     ; Per-column variables.
+    ;
     (define column-vars init-column-vars)
-
+    ;
+    ; The header lists, strings or bitmaps.
+    ; These can be #f if no headers are wanted.
+    ;
     (define column-headers #f) ; Will be set later.
     (define row-headers #f)
     ;
@@ -129,11 +131,24 @@
     (define data-vscroll (member 'vscroll style))
     (define data-hscroll (member 'hscroll style))
     ;
-    ; The list of graphical objects that represent the row headers, if any.
+    ; The list of graphical objects that represent the headers, if any.
     ; They are not all always visible. The list is rebuilt when headers
     ; are changed.
     ;
+    (define column-labels null)
     (define row-labels null)
+    ;
+    ; Effective data cell height and width, taking into account the needs
+    ; of both data and headers, but not cell spacing.
+    ;
+    (define effective-cell-height 0)
+    (define effective-cell-width 0)
+    ;
+    ; Number of rows and columns.
+    ; Affected by actual data seen.
+    ;
+    (define effective-row-count 0)
+    (define effective-column-count 0)
           
     (super-new [parent parent]
                [style (set-intersect '(border deleted) style)]
@@ -157,16 +172,11 @@
            [stretchable-height #f]
            [stretchable-width #f]))
     (define column-header-container
-      (new canvas%
+      (new horizontal-panel%
            [parent column-header-area]
-           [paint-callback (λ (canvas dc) (paint-column-header-area))]
-           [style '()]))
-
-    ;    (define column-header-container
-    ;      (new horizontal-pane%
-    ;           [parent column-header-area]
-    ;           [spacing spacing]
-    ;           [alignment '(left top)]))
+           [style (if data-hscroll '(hide-hscroll) '())]
+           [spacing spacing]
+           [alignment '(left top)]))
     (define column-header-scroll-spacer
       (new pane%
            [parent column-header-area]
@@ -191,7 +201,7 @@
            [min-height (if (member 'hscroll style) 15 0)]
            [stretchable-height #f]))
     
-    (define my-canvas%
+    (define my-data-canvas%
       (class canvas%
         (define/override (on-scroll event)
           (send this refresh)
@@ -201,7 +211,7 @@
         (super-new)))
       
     (define data-area
-      (new my-canvas%
+      (new my-data-canvas%
            [parent lower-area]
            [paint-callback (λ (canvas dc) (paint-data-container))]
            [style (list* 'no-focus (set-intersect '(vscroll hscroll) style))]))
@@ -235,22 +245,44 @@
          (define-values (w h d a) (send dc get-text-extent element))
          (values (inexact->exact w) (inexact->exact h))]))
 
-    (define (calc-header-max-extents dc headers)
-      (if headers
-          (for/fold ([max-width 0]
-                     [max-height 0])
-                    ([element headers])
-            (define-values (w h) (element-extents dc element))
-            (values (max max-width w) (max max-height h)))
-          (values 0 0)))
+    ;
+    ; Calculates a header area's dimensions when all labels
+    ; are visible.
+    ;
+    (define (min-header-dimensions container labels)
+      ; The only sane way to do this is to temporarily make all
+      ; labels visible. The dimensions are affected by the children's
+      ; dimensions, margins, border, spacing.
+      (send container begin-container-sequence)
+      (define children (send container get-children))
+      (send container change-children (λ (ch) labels))
+      (send container reflow-container)
+      (define-values (gw gh) (send container get-graphical-min-size))
+      (values (max gw (send container min-width))
+              (max gh (send container min-height)))
+      ; Put things back the way they were:
+      (send container change-children (λ (ch) children))
+      (send container end-container-sequence)
+      (values gw gh))
 
-    (define (calc-extents)
-      (define-values (ch-max-width ch-max-height)
-        (calc-header-max-extents (send column-header-container get-dc) column-headers))
-      (define max-width ch-max-width)
+    (define (labels-width labels)
+      (for/fold ([width 0])
+                ([label labels])
+        (define-values (w h) (send label get-graphical-min-size))
+        (max width w)))
+
+    (define (labels-height labels)
+      (for/fold ([height 0])
+                ([label labels])
+        (define-values (w h) (send label get-graphical-min-size))
+        (max height h)))
+        
+
+    (define (calc-data-extents)
+      (define max-width 0)
       (define max-height 0)
       (define max-row (- (length row-labels) 1))
-      (define max-col (if column-headers (- (length column-headers) 1) -1))
+      (define max-col (- (length column-labels) 1))
       (define dc (send data-area get-dc))
       (define (visitor row col datum)
         (define-values (w h) (element-extents dc datum))
@@ -274,7 +306,8 @@
                         ['right  (- col-width w)]
                         ['center (quotient (- col-width w) 2)]
                         ['left   0])))
-         (define y (+ (* row-height row)
+         (define y (+ (
+                       * row-height row)
                       (* spacing row)
                       (match (cadr alignment)
                         ['top 0]
@@ -286,29 +319,29 @@
       (define first-visible-col (send data-area get-scroll-pos 'horizontal))
       (define first-visible-row (send data-area get-scroll-pos 'vertical))
       (define dc (send data-area get-dc))
-      (define-values (rh cw nr nc) (calc-extents))
       (define (paint-datum row col datum)
         (when (and (>= col first-visible-col) (>= row first-visible-row))
-          (paint-element (- row first-visible-row) (- col first-visible-col) datum rh cw dc (get-column-var col 'alignment))))
+          (paint-element (- row first-visible-row) (- col first-visible-col)
+                         datum
+                         effective-cell-height effective-cell-width
+                         dc
+                         (get-column-var col 'alignment))))
       (visit-data paint-datum))
     
     (define (paint-column-header-area)
-      (define dc (send column-header-container get-dc))
-      (send dc clear)
       (when column-headers
+        (send column-header-area begin-container-sequence)
         (define first-visible-col (send data-area get-scroll-pos 'horizontal))
-        (define ch-max-height (send column-header-area min-height))
-        (define-values (max-height max-width nr nc) (calc-extents))
-        (define-values (width height) (send column-header-container get-client-size))
-        (for ([header (list-tail column-headers first-visible-col)]
-              [col-index (in-naturals first-visible-col)])
-          (paint-element 0 (- col-index first-visible-col) header ch-max-height max-width dc (get-column-var col-index 'alignment)))))
+        ;(printf "col label count ~a, scroll pos ~a~n" (length column-labels) first-visible-col)
+        (define new-children (list-tail column-labels first-visible-col))
+        (send column-header-container change-children (λ (ignored) new-children))
+        (send column-header-area end-container-sequence)))
 
     (define (paint-row-header-area)
       (when row-headers
         (send row-header-area begin-container-sequence)
         (define first-visible-row (send data-area get-scroll-pos 'vertical))
-        (printf "row label count ~a, scroll pos ~a~n" (length row-labels) first-visible-row)
+        ;(printf "row label count ~a, scroll pos ~a~n" (length row-labels) first-visible-row)
         (define new-children (list-tail row-labels first-visible-row))
         (send row-header-container change-children (λ (ignored) new-children))
         (send row-header-area end-container-sequence)))
@@ -317,50 +350,69 @@
       (send this begin-container-sequence)
 
       ;
-      ; Get the overall data cell height and width.
+      ; Get the overall data cell height and width, without spacing.
       ;
-      (define-values (max-height max-width nrows ncols) (calc-extents))
-      (define effective-cell-height (+ max-height spacing))
-      (define effective-cell-width (+ max-width spacing))
+      (define-values (max-height max-width nrows ncols) (calc-data-extents))
+      (set! effective-row-count nrows)
+      (set! effective-column-count ncols)
+      (printf "Initial cell h/w: (~a ~a)~n" max-height max-width)
 
+      (set! effective-cell-height (max max-height (labels-height row-labels)))
+      (set! effective-cell-width  (max max-width (labels-width column-labels)))      
+      (printf "Effective cell h/w: (~a ~a)~n" effective-cell-height effective-cell-width)
+      
       ;
       ; We need separate width and height calculations for the row and column headers, respectively,
       ; since those don't have to match the data cell sizes.
       ;
-      (define-values (ch-max-width ch-max-height)
-        (calc-header-max-extents (send column-header-container get-dc) column-headers))
-      ; Make all row header labels visible so we can get the width of that column. Kinda grody.
-      ; We ask for a refresh after this, which will repaint them correctly.
-      (for ([h row-labels])
-        (send h min-height max-height))
-      (send row-header-container change-children (λ (ignored) row-labels))
-      (send row-header-container reflow-container)
-      (define-values (rh-max-width rh-total-height) (send row-header-container get-client-size))
+      (define-values (ch-max-width ch-max-height) (min-header-dimensions column-header-container column-labels))
+      (define-values (rh-max-width rh-max-height) (min-header-dimensions row-header-container row-labels))
+      (printf "Column header max height: ~a~n" ch-max-height)
+      (printf "Row    header max width : ~a~n" rh-max-width)
 
       ;
       ; The row header spacer, a blank space in the upper left corner, needs to match the
-      ; width and height of the row and column headers. (Wither of which can be zero!)
+      ; width of the row headers. (Which can be zero!)
       ; 
       (send row-header-spacer min-width rh-max-width)
-      (send row-header-spacer min-height ch-max-height)
 
       ;
-      ; Adjust the header areas themselves to accomodate the widest or tallest member.
+      ; Adjust the header areas themselves to accomodate the widest or tallest label.
+      ; We don't want this dimension to shift when scrolling hides some labels.
       ;
       (send row-header-area min-width rh-max-width)
       (send column-header-area min-height ch-max-height)
 
       ;
-      ; Now comes the critical adjustment of the scroll bars.
+      ; Adjust each label to have the same width or height as all cells do.
       ;
-      (define total-data-width (- (* effective-cell-width ncols) spacing))
-      (define total-data-height (- (* effective-cell-height nrows) spacing))
+      (for ([label column-labels]) (send label min-width  effective-cell-width))
+      (for ([label row-labels])    (send label min-height effective-cell-height))
+      ;
+      ; All done. Reset scrollbars, queue a refresh and allow updates to occur.
+      ;
+      (update-scrollbars #t)
+      (send this refresh)
+      (send this end-container-sequence))
+
+    (define (update-scrollbars [reset-pos #f])
+      (define first-visible-col (if reset-pos 0 (send data-area get-scroll-pos 'horizontal)))
+      (define first-visible-row (if reset-pos 0 (send data-area get-scroll-pos 'vertical)))
+      
+      (define total-data-width (+ (* effective-cell-width effective-column-count)
+                                  (* effective-column-count spacing)))
+      (define total-data-height (+ (* effective-cell-height effective-row-count)
+                                   (* effective-row-count spacing)))
       (unless data-hscroll (send data-area min-client-width total-data-width))
       (unless data-vscroll (send data-area min-client-height total-data-height))
       (when (or data-hscroll data-vscroll)
         (define-values (client-width client-height) (send data-area get-client-size))
-        (define scroll-total-cols (and data-hscroll (positive? ncols) (max 2 (- ncols 1))))
-        (define scroll-total-rows (and data-vscroll (positive? nrows) (max 2 (- nrows 1))))
+        (define scroll-total-cols (and data-hscroll
+                                       (positive? effective-column-count)
+                                       (max 2 (- effective-column-count 1))))
+        (define scroll-total-rows (and data-vscroll
+                                       (positive? effective-row-count)
+                                       (max 2 (- effective-row-count 1))))
         (define scroll-page-cols (max 1 (if (positive? effective-cell-width)
                                             (quotient client-width effective-cell-width)
                                             0)))
@@ -372,37 +424,52 @@
         (send data-area init-manual-scrollbars
               scroll-total-cols scroll-total-rows
               scroll-page-cols scroll-page-rows
-              0 0))
+              first-visible-col first-visible-row))
       ;(printf "data w/h: (~a ~a)~n" total-data-width total-data-height)
+      (send this refresh))
       
-      ;
-      ; All done. Queue a refresh and allow updates to occur.
-      ;
-      (send this refresh)
-      (send this end-container-sequence))
-
+      
+    
     (define/override (on-size width height)
-      (update-dimensions)
+      (update-scrollbars)
       (super on-size width height))
+
+    (define/override (refresh)
+      (paint-column-header-area)
+      (paint-row-header-area)
+      (super refresh))
     
     (define/public (set-column-headers headers)
       (set! column-headers headers)
+      (set! column-labels
+            (if headers
+                (for/list ([header headers]
+                           [col-index (in-naturals)])
+                  (define alignment (get-column-var col-index 'alignment))
+                  (define ph (new panel%
+                                  [parent column-header-container]
+                                  [alignment alignment]
+                                  [stretchable-width #f]))
+                  (new message% [parent ph] [label header])
+                  ph)
+                null))
       (update-dimensions))
     
     (define/public (set-row-headers headers)
       (set! row-headers headers)
-      (cond
-        [headers  (set! row-labels
-                        (for/list ([header row-headers]
-                                   [row-index (in-naturals)])
-                          (define ph (new panel%
-                                          [parent row-header-container]
-                                          [alignment '(left center)]
-                                          [stretchable-height #f]))
-                          (new message% [parent ph] [label header])
-                          ph))]
-        [else (set! row-labels null)])
+      (set! row-labels
+            (if headers
+                (for/list ([header headers]
+                           [col-index (in-naturals)])
+                  (define ph (new panel%
+                                  [parent row-header-container]
+                                  [alignment '(left center)]
+                                  [stretchable-height #f]))
+                  (new message% [parent ph] [label header])
+                  ph)
+                null))
       (update-dimensions))
+    
     (set-column-headers init-column-headers)
     (set-row-headers init-row-headers)
 
