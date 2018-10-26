@@ -11,6 +11,10 @@
          "inventory.rkt"
          "data-table.rkt")
 
+; TODO: Wire up recipe searches.
+;       Input: item & count, # of results?
+;       Output: Recipe chains, total inventory usage, total inventory shortage on failure.
+
 
 (define (inventory-type? sym)
   (member sym '(exosuit freighter ship vehicle chest)))
