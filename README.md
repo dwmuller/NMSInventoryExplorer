@@ -4,16 +4,57 @@ This is an unfinished utility for flexibly viewing character
 inventories in No Man's Sky, and exploring crafting possibilities in
 relation to the current state of these inventories. It reads your
 inventories from the game save file, and thus reflects their state as
-of your last save.
-
-This project is a work in progress, and this README currently contains
-mostly notes about the development of the software. Eventually there
-should be user instructions on the associated GitHub wiki.
+of your last save. It never attempts to modify your game save file.
 
 I had the idea for this utility while playing the game when I got
 frustrated sorting through my inventory in the game No Man's Sky, and
 figuring what chain of crafting recipes I could apply to create a
 particular product.
+
+This project is a work in progress. Usable alpha-quality
+[releases] are available. Download the zip file, unpack the directory tree
+it contains to a convenient location, and run the executable file in the 
+tree.
+
+## Using the Software
+
+The inventory selection checkboxes determine which of your inventories
+are displayed and used when searching for recipes.
+
+The Inventories tab shows a tabular summary of the selected inventories,
+starting with a Totals column. There's one row for every item that
+is represented in the selected inventories. In other words, no row
+is show for an item unless you have at least one of that item in a
+selected inventory.
+
+The Recipe Finder tab helps you find recipes for items that you wish
+to craft. Choose a craftable item from the choice box, enter how many
+of the item you want, and press the Search button. The program will
+try to find the "best" sequence of crafting steps for fulfilling that
+request, based on your currently selected inventories. If the item 
+can't be built from your selected inventories, it will still suggest
+a recipe chain and tell you what you're missing.
+
+The choice of "best" recipe sequence is based on a simplistic cost calculation
+that currently looks at the length of the recipe sequence, and the total number
+of items still missing to use it (which will be zero if the sequence can
+actually be satisfied by selected inventories).
+
+Future releases may tweak this cost calculation, and/or may show multiple
+chains for you to choose from.
+
+The checkboxes next to crafting steps do nothing; they're provided just to
+help you keep track while applying a lengthy sequence.
+
+## Problems
+
+Hello Games tried to obscure the save file with a release in late 2018
+that changed the plain English JSON tags to obfuscated bits of text.
+The mapping of these tags in save-file.rkt is incomplete, based on what
+I was able to figure out so far from one of my own save files.
+Similarly, the information in items.rkt, which enumerates the items in
+the game with their base values (where known) is not complete, nor is
+the listing of recipes in recipes.rkt.
 
 ## Implementation Notes
 
@@ -26,16 +67,6 @@ The IDE and its debugging tools are capable but not wonderful. But
 with it, you can get programming very quickly, and the documentation
 for the language and its libraries is quite good.
 
-## Testing
-
-The software currently locates your most recent game save file and
-reads that. Thus it assumes that you have a game save file from a
-recent version of the game.
-
-TODO:
-* Support older versions (without obfuscated JSON tags).
-* Allow selection of file, include a test file in project.
-
 ## Building
 
 To build a release, simply open the NMSInventoryExplorer.rkt file with
@@ -46,23 +77,16 @@ executable?"  Click "Create" and wait. You'll end up with a zip file
 containing the executable and supporting subdirectories. Total
 unpacked size is on the order of 45MB.
 
-## State of the software
+## Testing
 
-You can currently select the inventories whose contents you want to
-view, and see the contents of selected inventories in a reasonably
-compact and flexible form. The UI could use a little more tweaking
-to make the data grid easier on the eyes.
+The software currently locates your most recent game save file and
+reads that. Thus it assumes that you have a game save file from a
+recent version of the game.
 
-Code exists for doing heuristic search for recipe chains (given a target 
-item and count) that can be satisfied by a given inventory, but has not
-been wired into any UI yet.
-
-Hello Games tried to obscure the save file with a release in late 2018
-that changed the plain English JSON tags to obfuscated bits of text.
-The mapping of these tags in save-file.rkt is incomplete, based on what
-I was able to figure out so far from one of my own save files.
-Similarly, the information in items.rkt, which enumerates the items in
-the game with their base values (where known) is not complete, nor is
-the listing of recipes in recipes.rkt.
+## Possible future enhancements
+* Offer multiple recipe chain results after a search.
+* Allow selection of save file (and maybe include a test file in the project).
+* Support older save file versions (e.g. without obfuscated JSON tags).
 
 [Racket]: https://racket-lang.org/
+[releases]: https://github.com/dwmuller/NMSInventoryExplorer/releases
