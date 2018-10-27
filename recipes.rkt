@@ -119,7 +119,11 @@
 
 (define raw-recipes
   '(
+    ;;
     ;; Resources
+    ;;
+    ;; All filled in from data on https://nomanssky.gamepedia.com
+    ;;
     (Ammonia
      (refine Salt (Fungal-Mould 2))
      (refine Nitrogen Di-hydrogen)
@@ -210,42 +214,129 @@
      (refine 10 Ferrite-Dust Oxygen Emeril))
     (Indium
      (refine 4 Indium Chromatic-Metal))
-    ;;; TODO: Recipes are incomplete from here on.
-    (Ionised-Cobalt)
-    (Kelp-Sac)
-    (Living-Slime)
-    (Magnetised-Ferrite)
-    (Marrow-Bulb)
-    (Mordite)
-    (Nitrogen)
-    (Oxygen)
-    (Paraffinium)
-    (Phosphorus)
-    (Platinum)
+    (Ionised-Cobalt
+     (refine (Cobalt 2))
+     (refine 150 TetraCobalt)
+     (refine 6 Ionised-Cobalt (Oxygen 2))
+     (refine 5 (Cobalt 2) (Oxygen 2))
+     (refine 2 Marrow-Bulb (or Pugneum Oxygen Cobalt Ionised-Cobalt)))
+    (Kelp-Sac
+     (refine Salt Nitrogen))
+    (Living-Slime
+     (refine Viscous-Fluids))
+    (Magnetised-Ferrite
+     (refine (Pure-Ferrite 2))
+     (refine 1 Ferrite-Dust (or Copper Carbon))
+     (refine 2 Ferrite-Dust (or Cadmium Activated-Copper Condensed-Carbon))
+     (refine 3 Ferrite-Dust Emeril)
+     (refine 4 Ferrite-Dust (or Indium Activated-Cadmium))
+     (refine 6 Ferrite-Dust Activated-Emeril)
+     (refine 8 Ferrite-Dust Activated-Indium)
+     (refine 4 (Magnetised-Ferrite 3) Pugneum)
+     (refine 3 (Pure-Ferrite 2) Pugneum)
+     (refine 10 Platinum Oxygen)
+     (refine 2 Pure-Ferrite Carbon)
+     (refine 3 Pure-Ferrite Condensed-Carbon)
+     (refine 5 Ferrite-Dust Pure-Ferrite Silver)
+     (refine 8 Ferrite-Dust Pure-Ferrite Gold)
+     (refine 12 Ferrite-Dust Pure-Ferrite Platinum))     
+    (Marrow-Bulb
+     (refine 2 Cobalt Nitrogen)
+     (refine 4 Mordite Sodium-Nitrate)
+     (refine 3 Mordite Sodium))
+    (Mordite
+     (refine 2 (Coprite 3))
+     (refine Carbon Pugneum)
+     (refine 2 Condensed-Carbon Pugneum)
+     (refine Di-hydrogen Condensed-Carbon))
+    (Nitrogen
+     (refine (Radon 3))
+     (refine Radon Oxygen)
+     (refine Radon Chromatic-Metal))
+    (Oxygen
+     (refine 150 Superoxide-Crystal)
+     (refine Kelp-Sac)
+     (refine 2 Kelp-Sac (or Carbon Condensed-Carbon))
+     (refine 10 (or Fungal-Mould Frost-Crystal Cactus-Flesh Solanium Gamma-Root Star-Bulb) Kelp-Sac Condensed-Carbon))
+    (Paraffinium
+     (refine 2 Silver Oxygen)
+     (refine (Star-Bulb 2) Salt)
+     (refine Pyrite (or Ferrite-Dust Pure-Ferrite))
+     (refine Sulphurine Ferrite-Dust)
+     (refine 2 Sulphurine Pure-Ferrite)
+     (refine 3 Sulphurine Magnetised-Ferrite))
+    (Phosphorus
+     (refine (Solanium 2) Salt)
+     (refine (Dioxite 2) (or Ferrite-Dust Pure-Ferrite)))
+    (Platinum
+     (refine 250 (or Geodesite Iridesite))
+     (refine Silver Gold)
+     (refine 10 Ferrite-Dust Oxygen (Chromatic-Metal 250)))
     (Pugneum)
-    (Pure-Ferrite)
-    (Pyrite)
+    (Pure-Ferrite
+     (refine 150 Rare-Metal-Element)
+     (refine 3 (Ferrite-Dust 2) Pugneum)
+     (refine 2 Magnetised-Ferrite)
+     (refine Ferrite-Dust))
+    (Pyrite
+     (refine Gold)
+     (refine 2 Gold Oxygen)
+     (refine (Cactus-Flesh 2) Salt)
+     (refine Uranium (or Ferrite-Dust Pure-Ferrite)))
     (Radon
      (refine (Sulphurine 3))
      (refine Sulphurine (or Oxygen Chromatic-Metal)))
     (Residual-Goop)
-    (Runaway-Mould)
-    (Rusted-Metal)
-    (Salt)
+    (Runaway-Mould
+     (refine Living-Slime))
+    (Rusted-Metal
+     (refine Oxygen Ferrite-Dust)
+     (refine 2 Oxygen Pure-Ferrite)
+     (refine 4 Oxygen Magnetised-Ferrite))
+    (Salt
+     (refine 2 Chlorine)
+     (refine Di-hydrogen Oxygen))
     (Silver
-     (refine 250 Aronium))
-    (Sodium)
-    (Sodium-Nitrate)
-    (Solanium)
-    (Star-Bulb)
+     (refine 250 (or Herox Aronium Dirty-Bronze)))
+    (Sodium
+     (refine 2 Sodium-Nitrate)
+     (refine Marrow-Bulb)
+     (refine 2 Marrow-Bulb Carbon))
+    (Sodium-Nitrate
+     (refine 150 Destablised-Sodium)
+     (refine (Sodium 2))
+     (refine Sodium (or Carbon Oxygen Pugneum))
+     (refine 2 Sodium Condensed-Carbon)
+     (refine 2 Sodium-Nitrate Oxygen)
+     (refine 3 Sodium-Nitrate Pugneum)
+     ;(refine 2 (Tritium 2) Catalyst) ; From wiki - but what are catalysts???
+     (refine 2 (or Sodium Sodium-Nitrate) (or Coprite Marrow-Bulb Kelp-Sac))
+     (refine 2 Marrow-Bulb Condensed-Carbon)
+     (refine (or Sodium Magnetised-Ferrite) Nitrogen)
+     (refine 2 (or Sodium-Nitrate Pure-Ferrite) Nitrogen)
+     (refine Ferrite-Dust Nitrogen))
+    (Solanium
+     (refine 2 Solanium Phosphorus)
+     (refine (Phosphorus 2) Oxygen)
+     (refine (or Phosphorus Di-hydrogen) Sulphurine))
+    (Star-Bulb
+     (refine 2 Star-Bulb Paraffinium)
+     (refine Paraffinium (or Oxygen Nitrogen)))
     (Sulphurine
      (refine (Nitrogen 3))
      (refine Nitrogen (or Oxygen Chromatic-Metal)))
     (Tritium)
-    (Uranium)
+    (Uranium
+     (refine Phosphorus (or Ferrite-Dust Pure-Ferrite))
+     (refine (Gamma-Root 2) Salt)
+     (refine Radon (or Di-hydrogen Ferrite-Dust))
+     (refine 2 Radon Pure-Ferrite)
+     (refine 3 Radon Magnetised-Ferrite))
     (Viscous-Fluids)
 
+    ;;
     ;; Other items
+    ;;
     (Acid
      (build (Mordite 25) (Fungal-Mould 600)))
     (Advanced-Ion-Battery
@@ -291,6 +382,7 @@
      (build Living-Glass Cryo-Pump))
     (Deflector-Shield
      (build (Chromatic-Metal 100) (Sodium-Nitrate 25)))
+    (Destablised-Sodium) ;TODO
     (Di-hydrogen-Jelly
      (build (Di-hydrogen 40)))
     (Dirty-Bronze
@@ -344,12 +436,6 @@
      (build (Chromatic-Metal 125) (Microprocessor 5)))
     (Ion-Battery
      (build (Cobalt 25) (Ferrite-Dust 20)))
-    (Ionised-Cobalt
-     (refine (Cobalt 2))
-     (refine 150 TetraCobalt)
-     (refine 6 Ionised-Cobalt (Oxygen 2))
-     (refine 5 (Cobalt 2) (Oxygen 2))
-     (refine 2 Marrow-Bulb (or Pugneum Oxygen Cobalt Ionised-Cobalt)))
     (Iridesite
      (build Aronium Magno-Gold Grantine))
     (Jetpack
@@ -371,8 +457,6 @@
      (build Lubricant (Glass 5)))
     (Lubricant
      (build (Coprite 50) (Gamma-Root 400)))
-    (Magnetised-Ferrite
-     (refine (Pure-Ferrite 2)))
     (Magno-Gold
      (build (Phosphorus 50) (Ionised-Cobalt 50))
      (refine (Phosphorus 30)
