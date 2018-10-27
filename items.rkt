@@ -119,6 +119,7 @@
     (Cryogenic-Chamber 3800000 "MEGAPROD3")
     (Cyclotron-Module-\(C\) "U_SHIPBLOB1")
     (Deflector-Shield "SHIPSHIELD" installed)
+    (Destablised-Sodium 12300)
     (Di-hydrogen-Jelly 200 "JELLY")
     (Dirty-Bronze "ALLOY2")
     (Efficient-Thrusters "UT_LAUNCHER" installed)
