@@ -96,6 +96,7 @@
         (Kgt . WeaponInventory)
 
         (NKm . Name)
+        (YTa . Location)
         (pMa . InventoryLayout)
         (9\;o . Level)
         (PMT . Inventory_TechOnly)
@@ -140,7 +141,7 @@
 
 (define save-file-name-regexp (regexp "^save[0-9]*.hg"))
 
-(define (json->inventory json path)
+(define (json->inventory json . path)
   (define slots (apply get-json-element json (append path '(Slots))))
   (define inventory (make-inventory))
   ; TODO
@@ -161,7 +162,7 @@
 (define (json->chest-inventories json)
   (for/vector ([i (in-range 10)])
     (define name (string->symbol (format "Chest~sInventory" (+ 1 i))))
-    (json->inventory json (list 'PlayerStateData name))))
+    (json->inventory json 'PlayerStateData name)))
 
 (define (json->ship-inventories json)
   (define count (length (get-json-element json 'PlayerStateData 'ShipOwnership)))
@@ -170,13 +171,22 @@
              ([i (in-range (- count 1))])
      (define filename (get-json-element json 'PlayerStateData 'ShipOwnership i 'Resource 'Filename))
      (if (non-empty-string? filename)
-         (cons (json->inventory json (list 'PlayerStateData 'ShipOwnership i 'Inventory)) result)
+         (cons (json->inventory json 'PlayerStateData 'ShipOwnership i 'Inventory) result)
          result))))
 
 (define (json->vehicle-inventories json)
-  (define count (length (get-json-element json 'PlayerStateData 'VehicleOwnership)))
-  (for/list ([i (in-range count)])
-    (json->inventory json (list 'PlayerStateData 'VehicleOwnership i 'Inventory))))
+  (define vehicles-json (get-json-element json 'PlayerStateData 'VehicleOwnership))
+  (define count (length vehicles-json))
+  (for/fold ([result null]
+             #:result (reverse result))
+            ([vehicle vehicles-json]
+             [i (in-range count)])
+    (define location (get-json-element vehicle 'Location))
+    (if (string? location)
+        ; Use full path here to help with error messages.
+        (cons (json->inventory json 'PlayerStateData 'ShipOwnership i 'Inventory) result)
+        ; A non-string location means, I think, an unused slot.
+        result)))
 
 (define (json->ships json)
   (define ships-json (get-json-element json 'PlayerStateData 'ShipOwnership))
@@ -203,17 +213,31 @@
        [else
         ; Appears to be an unused slot.
         result]))))
-  
+
+;;
+;; Default vehicle names.
+;;
+;; TODO: Two more slots were added in or shortly before update 1.65.
+;;       Don't yet know the names for them.
+(define default-vehicle-names #["Roamer" "Nomad" "Colossus"])
+
 (define (json->vehicles json)
-  ; TODO: Don't actually know how to tell if a vehicle slot is empty.
-  ; Also not sure if they always appear in the order expected by the default list below.
+  ; TODO: Checking for string Location to determine if slot in use.
+  ; Not sure if they always appear in the order expected by the default list.
   (define vehicles-json (get-json-element json 'PlayerStateData 'VehicleOwnership))
-  (for/list ([vehicle vehicles-json]
-             [default-name #["Roamer" "Nomad" "Colossus"]])
+  (for/fold ([result null]
+             #:result (reverse result))
+            ([vehicle vehicles-json]
+             [i (in-naturals)])
+    (define location (get-json-element vehicle 'Location))
     (define name (get-json-element vehicle 'Name))
-    (cond
-      [(non-empty-string? name) name]
-      [else default-name])))
+    (if (string? location)
+        (cons (cond [(non-empty-string? name) name]
+                    [(< i (vector-length default-vehicle-names))
+                     (vector-ref default-vehicle-names i)]
+                    [else (format "Unknown~a" i)])
+              result)
+        result)))
 
 (define (inventory-key? k)
   (match k
@@ -227,9 +251,9 @@
 (define (get-keyed-inventories json)
   (append
    (list
-    (cons '(exosuit . 0)    (json->inventory json '(PlayerStateData Inventory)))
-    (cons '(exosuit . 1)    (json->inventory json '(PlayerStateData Inventory_Cargo)))
-    (cons '(freighter . 0)  (json->inventory json '(PlayerStateData FreighterInventory))))
+    (cons '(exosuit . 0)    (json->inventory json 'PlayerStateData 'Inventory))
+    (cons '(exosuit . 1)    (json->inventory json 'PlayerStateData 'Inventory_Cargo))
+    (cons '(freighter . 0)  (json->inventory json 'PlayerStateData 'FreighterInventory)))
    (for/list ([n (in-naturals)]
               [i (json->ship-inventories json)])
      (cons (cons 'ship n) i))
