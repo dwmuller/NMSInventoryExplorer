@@ -11,6 +11,7 @@
          "inventory.rkt"
          "data-table.rkt"
          "search.rkt"
+         "generated-items.rkt" ; Defines items, provides nothing.
          "recipes.rkt")
 
 ; TODO: Show recipe list's total inventory usage.

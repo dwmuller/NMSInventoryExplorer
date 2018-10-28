@@ -3,8 +3,9 @@
 (require racket/fixnum
          racket/undefined)
 
-(require "utility.rkt")
-(require "items.rkt")
+(require "utility.rkt"
+         "items.rkt"
+         "generated-items.rkt")
 
 (provide (struct-out recipe$)
          get-recipes-for
@@ -207,7 +208,7 @@
      (refine 2 Gamma-Root Uranium)
      (refine (Uranium 2) (or Oxygen Radon)))
     (Gold
-     (refine 125 (or Lemmium Magno-Gold Grantine))
+     (refine 125 (or Lemmium Magno=Gold Grantine))
      (refine Mordite Pugneum)
      (refine Coprite Residual-Goop)
      (refine 2 Coprite Pugneum)
@@ -376,10 +377,10 @@
      (build Heat-Capacitor Poly-Fibre))
     (Cobalt-Mirror
      (build (Ionised-Cobalt 50)))
-    (Cryo-Pump
+    (Cryo=Pump
      (build Hot-Ice Thermic-Condensate))
     (Cryogenic-Chamber
-     (build Living-Glass Cryo-Pump))
+     (build Living-Glass Cryo=Pump))
     (Deflector-Shield
      (build (Chromatic-Metal 100) (Sodium-Nitrate 25)))
     (Destablised-Sodium) ;TODO
@@ -437,7 +438,7 @@
     (Ion-Battery
      (build (Cobalt 25) (Ferrite-Dust 20)))
     (Iridesite
-     (build Aronium Magno-Gold Grantine))
+     (build Aronium Magno=Gold Grantine))
     (Jetpack
      (build (Ferrite-Dust 100)))
     (Launch-Thruster
@@ -457,7 +458,7 @@
      (build Lubricant (Glass 5)))
     (Lubricant
      (build (Coprite 50) (Gamma-Root 400)))
-    (Magno-Gold
+    (Magno=Gold
      (build (Phosphorus 50) (Ionised-Cobalt 50))
      (refine (Phosphorus 30)
              (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
@@ -488,7 +489,7 @@
      (build (Cactus-Flesh 100) (Star-Bulb 200)))
     (Portable-Refiner
      (build Metal-Plating (Oxygen 30)))
-    (Projectile-Ammo
+    (Projectile-Ammunition
      (build 500 (Ferrite-Dust 60)))
     (Pulse-Engine
      (build Hermetic-Seal Metal-Plating))

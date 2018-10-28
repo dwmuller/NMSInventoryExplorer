@@ -11,15 +11,16 @@
          item-name->label
          item->label
          label->item-name
-         label->item)
+         label->item
+         add-item)
+
+(define logging #t)
 
 (struct item$ (name
                id
                base-value
                flags
-               label
-               substance-category
-               rarity) #:transparent)
+               label) #:prefab)
 
 (define (item-name->label sym)
   (string-replace (string-replace (symbol->string sym) "-" " ") "=" "-"))
@@ -125,7 +126,7 @@
     (Chloride-Lattice "WATERPROD3")
     (Circuit-Board 916250)
     (Cobalt-Mirror 20500)
-    (Cryo-Pump 1500000 "COMPOUND6")
+    (Cryo=Pump 1500000 "COMPOUND6")
     (Cryogenic-Chamber 3800000 "MEGAPROD3")
     (Cyclotron-Module-\(C\) "U_SHIPBLOB1")
     (Deflector-Shield "SHIPSHIELD" installed)
@@ -145,7 +146,7 @@
     (Geodesite 150000 "ALLOY7")
     (Glass 13000)
     (Grantine 25000 "ALLOY6")
-    (Gravatino-Ball "GRAVBALL")
+    (Gravitino-Ball "GRAVBALL")
     (Hazard-Protection "PROTECT" installed)
     (Heat-Capacitor 180000)
     (Hermetic-Seal 800)
@@ -166,7 +167,7 @@
     (Liquid-Explosive 800500)
     (Living-Glass 566000)
     (Lubricant 566000)
-    (Magno-Gold 25000 "ALLOY5")
+    (Magno=Gold 25000 "ALLOY5")
     (Metal-Plating 800)
     (Microprocessor 2000 "MICROCHIP")
     (Mind-Control-Device 75000 "FRIG_BOOST_TRA")
@@ -182,7 +183,7 @@
     (Oxygen-Filter 615)
     (Photon-Cannon "SHIPGUN1")
     (|Photon-Cannon-Module-(B)| "U_SHIPGUN2")
-    (Projectile-Ammo 50)
+    (Projectile-Ammunition 50)
     (Pulse-Engine "SHIPJUMP1" installed)
     (Quad-Servo 1000000000 "QUAD_PROD")
     (Quantum-Processor 4400000)
@@ -211,20 +212,20 @@
     (Walker-Brain 1000000000)
     (Warp-Cell 46750 "HYPERFUEL1")))
 
-(define items (make-hasheq
+#;(define items (make-hasheq
                (for/list ([def raw-items])
                  (match def
                    [(list (? symbol? n) (? string? id) (? symbol? flags) ...)
-                    (cons n (item$ n id (void) flags (void) (void) (void)))]
+                    (cons n (item$ n id (void) flags (item-name->label n)))]
                    [(list (? symbol? n) (? integer? v) (? string? id) (? symbol? flags) ...)
-                    (cons n (item$ n id v flags (void) (void) (void)))]
+                    (cons n (item$ n id v flags (item-name->label n)))]
                    [(list (? symbol? n) (? integer? v) (? symbol? flags) ...)
-                    (cons n (item$ n (void) v flags (void) (void) (void)))]
+                    (cons n (item$ n (void) v flags (item-name->label n)))]
                    [(list (? symbol? n) (? symbol? flags) ...)
-                    (cons n (item$ n (void) (void) flags (void) (void) (void)))]
+                    (cons n (item$ n (void) (void) flags (item-name->label n)))]
                    [(? symbol? n)
-                      (cons n (item$ n (void) (void) '() (void) (void) (void)))]))))
-
+                      (cons n (item$ n (void) (void) '() (item-name->label n)))]))))
+(define items (make-hasheq))
 
 (define (get-item name)
   (define result (hash-ref items name #f))
@@ -232,17 +233,27 @@
     (raise-argument-error 'get-item "defined item name symbol" name))
   result)
 
-(define item-by-save-id (make-hash
-                         (for/list ([i (hash-values items)]
-                                    #:unless (void? (item$-id i)))
-                           (cons (item$-id i) i))))
+(define items-by-save-id
+  (make-hash
+   (for/list ([i (hash-values items)]
+              #:unless (void? (item$-id i)))
+     (cons (item$-id i) i))))
 
 (define (get-item-by-save-id id [default (void)])
   (define match (regexp-match "^\\^([^#]+)(#[0-9]+)?" id))
   (unless match (raise-argument-error 'get-item-by-save-id "item save identifier in form ^id(#num)?" id))
-  (define key (second match))
-  (hash-ref item-by-save-id key default))
+  (define key (string->symbol (second match)))
+  (define result (hash-ref items-by-save-id key default))
+  (unless result
+    (when logging
+      (printf "Item save identifier not found: ~a~n" key)))
+  result)
 
 (define (get-sorted-item-names)
   (sort (hash-keys items) symbol<?))
 
+(define (add-item item)
+  (hash-set! items (item$-name item) item)
+  (hash-set! items-by-save-id (item$-id item) item))
+
+         

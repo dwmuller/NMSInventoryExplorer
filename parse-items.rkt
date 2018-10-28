@@ -79,9 +79,9 @@
         (hash-remove! name-lower-id-map name-id)
         (hash-set! product-map
                    item-name
-                   (item$ item-name (first data) (second data) (fifth data) label (third data) (fourth data)))))))
+                   (item$ item-name (first data) (second data) (third data) label))))))
 
-(define (read-products id-map path table-type items-type . extra-flags)
+(define (read-items id-map path table-type items-type . extra-flags)
   (define doc (read-doc path))
   (unless (and (eq? 'Data (element-name doc))
                (equal? table-type (get-attribute doc 'template)))
@@ -89,32 +89,60 @@
                         (format "<Data template=\"~a\" ..." table-type)
                         (format "<~a template=\"~a\" ..." (element-name doc) (get-attribute doc 'template))))
   ; TODO: Collect build recipes?
-  (for ([elem (child-element-sequence doc '(Property Property))])
+  (define dupes (mutable-set))
+  (for ([elem (child-element-sequence doc '(Property Property))]
+        [index (in-naturals)])
     (when (string=? items-type (get-attribute elem 'value))
       (define name-lower-id      (names-value elem '("NameLower")))
       (define id                 (string->symbol (or (names-value elem '("Id")) (names-value elem '("ID")))))
       (define base-value         (string->number (names-value elem '("BaseValue"))))
-      (define substance-category (string->symbol
-                                  (or (names-value elem '("SubstanceCategory" "SubstanceCategory")) "Unknown")))
-      (define rarity             (string->symbol (names-value elem '("Rarity" "Rarity"))))
       (define flags (for/fold ([result null])
                               ([flag-spec extra-flags])
-                      (define value (names-value elem flag-spec))
+                      (define prefix (car flag-spec))
+                      (define value (names-value elem (cdr flag-spec)))
                       (if value
-                          (cons (string->symbol (format "~a:~a" (last flag-spec) value)) result)
+                          (cons (string->symbol (format "~a:~a" prefix value)) result)
                           result)))
-      (hash-set! id-map name-lower-id (list id base-value substance-category rarity flags)))))
-
-
+      (define data (list id base-value flags))
+      (cond
+        [(set-member? dupes name-lower-id)
+         (hash-set! id-map (string-append (symbol->string id) "_NAME_L") data)]
+        [(hash-has-key? id-map name-lower-id)
+         ; An attempt to deal with duplicates.
+         ; CURRENTLY: First one wins.
+         ; ALSO TRIED: Base on the fact that there are unused localization entries that would match, tried constructing alternate name reference.
+         ;             This made things worse.
+         ; ALSO TRIED: Last one wins. Not sure if this was better or worse.
+         ;(set-add! dupes name-lower-id)
+         (printf "Duplicate ref to name ~a by entry ~a: ~a in ~a~n" name-lower-id index id path)
+         ;(define prev (hash-ref id-map name-lower-id))
+         ;(hash-set! id-map (string-append (symbol->string (car prev)) "_NAME_L") prev)
+         ;(hash-set! id-map (string-append (symbol->string id) "_NAME_L") data)
+         ]
+        [else (hash-set! id-map name-lower-id data)]))))
 
 ; Read items first, put placeholder for name text. Then translate placeholders.
 (define id-map (make-hash))
-(read-products id-map (build-path root "METADATA/REALITY/TABLES/NMS_REALITY_GCPRODUCTTABLE.EXML") "GcProductTable" "GcProductData.xml" '("Type" "ProductCategory"))
-(read-products id-map (build-path root "METADATA/REALITY/TABLES/NMS_REALITY_GCSUBSTANCETABLE.EXML") "GcSubstanceTable" "GcRealitySubstanceData.xml")
+(read-items id-map (build-path root "METADATA/REALITY/TABLES/NMS_REALITY_GCPRODUCTTABLE.EXML") "GcProductTable" "GcProductData.xml"
+            '("Product" "Type" "ProductCategory")
+            '("Rarity" "Rarity" "Rarity")
+            '("Substance" "SubstanceCategory" "SubstanceCategory"))
+(read-items id-map (build-path root "METADATA/REALITY/TABLES/NMS_REALITY_GCSUBSTANCETABLE.EXML") "GcSubstanceTable" "GcRealitySubstanceData.xml"
+            '("Rarity" "Rarity" "Rarity")
+            '("Substance" "SubstanceCategory" "SubstanceCategory"))
+(read-items id-map (build-path root "METADATA/REALITY/TABLES/NMS_REALITY_GCTECHNOLOGYTABLE.EXML") "GcTechnologyTable" "GcTechnology.xml"
+            '("TechShopRarity" "TechShopRarity" "TechnologyRarity")
+            '("TechnologyRarity" "TechnologyRarity" "TechnologyRarity")
+            '("Technology" "TechnologyCategory" "TechnologyCategory"))
 (define product-map (make-hasheq))
-(scan-localization-table (build-path root "LANGUAGE/NMS_LOC1_USENGLISH.EXML") "USEnglish" id-map product-map)
-(scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_USENGLISH.EXML") "USEnglish" id-map product-map)
-(scan-localization-table (build-path root "LANGUAGE/NMS_UPDATE3_USENGLISH.EXML") "USEnglish" id-map product-map)
+
+; By default, my game seems to be using U.K. English rather than U.S. English, so let's stick with that.
+;(scan-localization-table (build-path root "LANGUAGE/NMS_LOC1_USENGLISH.EXML") "USEnglish" id-map product-map)
+;(scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_USENGLISH.EXML") "USEnglish" id-map product-map)
+;(scan-localization-table (build-path root "LANGUAGE/NMS_UPDATE3_USENGLISH.EXML") "USEnglish" id-map product-map)
+(scan-localization-table (build-path root "LANGUAGE/NMS_LOC1_ENGLISH.EXML") "English" id-map product-map)
+(scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_ENGLISH.EXML") "English" id-map product-map)
+(scan-localization-table (build-path root "LANGUAGE/NMS_UPDATE3_ENGLISH.EXML") "English" id-map product-map)
 
 ; Attempted additional scans to find missing items; no luck.
 ;(scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_ENGLISH.EXML") "English" id-map product-map)
@@ -123,9 +151,7 @@
 (printf "Found and translated ~a items.~n" (length (hash-keys product-map)))
 (unless (null? missing-item-translations)
   (printf "Missing translations for ~a items.~n" (length missing-item-translations)))
-(printf "Substance categories: ~a~n" (list->set (map (λ (v) (item$-substance-category v)) (hash-values product-map))))
-(printf "Rarities: ~a~n" (list->set (map (λ (v) (item$-rarity v)) (hash-values product-map))))
-(printf "Flags: ~a~n" (list->set (append-map (λ (v) (item$-flags v)) (hash-values product-map))))
+(pretty-print (list 'Flags (sort (remove-duplicates (append-map (λ (v) (item$-flags v)) (hash-values product-map))) symbol<?)))
 
 (define (write-generated-items)
   (call-with-output-file (build-path output-root "generated-items.rkt") #:mode 'text #:exists 'replace
@@ -137,4 +163,7 @@
       (define user (getenv "USERNAME"))
       (displayln (format "; Generated via parse-items.rkt by ~a at ~a" user timestamp) port)
       (pretty-write '(require "items.rkt") port)
-      (pretty-write (list 'define 'generated-items product-map) port))))
+      (writeln port)
+      (pretty-write (list 'define 'generated-items product-map) port)
+      (writeln port)
+      (pretty-write '(for ([item (hash-values generated-items)]) (add-item item)) port))))
