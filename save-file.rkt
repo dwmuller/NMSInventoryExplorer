@@ -297,7 +297,3 @@
            (values best-file best-date))]
       [else
        (values best-file best-date)])))
-
-  
-   
-

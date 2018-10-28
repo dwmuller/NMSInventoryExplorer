@@ -10,19 +10,28 @@
          get-sorted-item-names
          item-name->label
          item->label
+         label->item-name
          label->item)
 
-(struct item$ (name id base-value flags) #:transparent)
+(struct item$ (name
+               id
+               base-value
+               flags
+               label
+               substance-category
+               rarity) #:transparent)
 
 (define (item-name->label sym)
-  ;; TODO: Prettify item name.
-  (symbol->string sym))
+  (string-replace (string-replace (symbol->string sym) "-" " ") "=" "-"))
 
 (define (item->label item)
   (item-name->label (item$-name item)))
 
+(define (label->item-name label)
+  (string->symbol (string-replace (string-replace label "-" "=") " " "-")))
+
 (define (label->item label)
-  (get-item (string->symbol label)))
+  (get-item (label->item-name label)))
 
 ; This list is not complete. Each entry lists a symbol to represent
 ; a kind of item in the game, an optional base value, and an optional
@@ -37,12 +46,13 @@
 ;       Store these in a separate file. (Racket-specific file formats
 ;       can include bitmap objects, but can still be edited easily
 ;       in DrRacket. Seems a shame not to leverage that unique ability.)
-; TODO: Use a more regular symbol name convention that can be be easily converted
-;       back to the item's in-game name, with spaces and dashes. E.g. use a dash
-;       for a space (which is the  norm now) and an equal sign for a space.
 ;
 (define raw-items
-  '((Activated-Cadmium 450 "EX_RED")
+  '(
+    ;;
+    ;; Resources
+    ;;
+    (Activated-Cadmium 450 "EX_RED")
     (Activated-Copper 245)
     (Activated-Emeril 696 "EX_GREEN")
     (Activated-Indium 949 "EX_BLUE")
@@ -57,7 +67,7 @@
     (Copper 110 "YELLOW2")
     (Coprite 30 "PLANT_POOP")
     (Deuterium 34 "LAUNCHSUB2")
-    (Di-hydrogen 34 "LAUNCHSUB")
+    (Di=hydrogen 34 "LAUNCHSUB")
     (Dioxite 62 "COLD1")
     (Emeril 275 "GREEN2")
     (Ferrite-Dust 14 "LAND1")
@@ -97,7 +107,7 @@
 
     ;; Other items
     (A-Class-Defence-Systems-Upgrade "UP_SHLD3" installed)
-    (Acid 188000)
+    (Acid 188000 "FARMPROD1")
     (Advanced-Ion-Battery 500 "POWERCELL2")
     (Aronium 25000 "ALLOY1")
     (Antimatter 5233 "ANTIMATTER")
@@ -120,14 +130,14 @@
     (Cyclotron-Module-\(C\) "U_SHIPBLOB1")
     (Deflector-Shield "SHIPSHIELD" installed)
     (Destablised-Sodium 12300)
-    (Di-hydrogen-Jelly 200 "JELLY")
+    (Di=hydrogen-Jelly 200 "JELLY")
     (Dirty-Bronze "ALLOY2")
     (Efficient-Thrusters "UT_LAUNCHER" installed)
     (Enriched-Carbon 50000 "REACTION2")
     (Explosive-Drones 75000)
-    (|Frigate-Fuel (50 Tonnes)| 20000 "FRIGATE_FUEL_1") ; verify
-    (|Frigate-Fuel (100 Tonnes)| "FRIGATE_FUEL_2")
-    (|Frigate-Fuel (200 Tonnes)| "FRIGATE_FUEL_3")
+    (|Frigate-Fuel-(50-Tonnes)| 20000 "FRIGATE_FUEL_1") ; verify
+    (|Frigate-Fuel-(100-Tonnes)| "FRIGATE_FUEL_2")
+    (|Frigate-Fuel-(200-Tonnes)| "FRIGATE_FUEL_3")
     (Frost-Crystal "PLANT_SNOW")
     (Fuel-Oxidiser 75000 "FRIG_BOOST_SPD")
     (Fusion-Accelerant "COMPOUND4")
@@ -143,7 +153,7 @@
     (Holographic-Analyser 75000 "FRIG_BOOST_EXP")
     (Hot-Ice 320000)
     (Hyperdrive "HYPERDRIVE" installed)
-    (|Infra-Knife Module (A)| "U_SHIPMINI3")
+    (|Infra=Knife-Module-(A)| "U_SHIPMINI3")
     (Ion-Battery 200 "POWERCELL")
     (Iridesite 150000 "ALLOY8")
     (Jetpack "JET1" installed)
@@ -171,7 +181,7 @@
     (Oxygen-Capsule 350 "PRODFUEL1")
     (Oxygen-Filter 615)
     (Photon-Cannon "SHIPGUN1")
-    (|Photon Cannon Module (B)| "U_SHIPGUN2")
+    (|Photon-Cannon-Module-(B)| "U_SHIPGUN2")
     (Projectile-Ammo 50)
     (Pulse-Engine "SHIPJUMP1" installed)
     (Quad-Servo 1000000000 "QUAD_PROD")
@@ -205,15 +215,15 @@
                (for/list ([def raw-items])
                  (match def
                    [(list (? symbol? n) (? string? id) (? symbol? flags) ...)
-                    (cons n (item$ n id (void) flags))]
+                    (cons n (item$ n id (void) flags (void) (void) (void)))]
                    [(list (? symbol? n) (? integer? v) (? string? id) (? symbol? flags) ...)
-                    (cons n (item$ n id v flags))]
+                    (cons n (item$ n id v flags (void) (void) (void)))]
                    [(list (? symbol? n) (? integer? v) (? symbol? flags) ...)
-                    (cons n (item$ n (void) v flags))]
+                    (cons n (item$ n (void) v flags (void) (void) (void)))]
                    [(list (? symbol? n) (? symbol? flags) ...)
-                    (cons n (item$ n (void) (void) flags))]
+                    (cons n (item$ n (void) (void) flags (void) (void) (void)))]
                    [(? symbol? n)
-                      (cons n (item$ n (void) (void) '()))]))))
+                      (cons n (item$ n (void) (void) '() (void) (void) (void)))]))))
 
 
 (define (get-item name)

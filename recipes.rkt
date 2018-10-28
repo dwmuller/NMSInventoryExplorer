@@ -126,7 +126,7 @@
     ;;
     (Ammonia
      (refine Salt (Fungal-Mould 2))
-     (refine Nitrogen Di-hydrogen)
+     (refine Nitrogen Di=hydrogen)
      (refine (or Ferrite-Dust Pure-Ferrite) (Paraffinium 2)))
     (Cactus-Flesh
      (refine 2 Cactus-Flesh Pyrite)
@@ -172,20 +172,20 @@
      (refine 6 Condensed-Carbon (Oxygen 2))
      (refine 2 Coprite (or Mordite (Carbon 2)))
      (refine 3 Coprite Condensed-Carbon)
-     (refine 2 Uranium Di-hydrogen))
+     (refine 2 Uranium Di=hydrogen))
     (Copper
      (refine 4 Copper Chromatic-Metal))
     (Coprite
      (refine (Mordite 3))
-     (refine Di-hydrogen Carbon)
+     (refine Di=hydrogen Carbon)
      (refine 3 Coprite Oxygen)
      (refine Nitrogen Sulphurine)
      (refine 3 Mordite (Carbon 2))
      (refine 4 Mordite Condensed-Carbon))
     (Deuterium
-     (refine Di-hydrogen Tritium))
-    (Di-hydrogen
-     (refine 50 Di-hydrogen-Jelly)
+     (refine Di=hydrogen Tritium))
+    (Di=hydrogen
+     (refine 50 Di=hydrogen-Jelly)
      (refine (Tritium 5)))
     (Dioxite
      (refine 2 Condensed-Carbon Sodium-Nitrate)
@@ -248,7 +248,7 @@
      (refine 2 (Coprite 3))
      (refine Carbon Pugneum)
      (refine 2 Condensed-Carbon Pugneum)
-     (refine Di-hydrogen Condensed-Carbon))
+     (refine Di=hydrogen Condensed-Carbon))
     (Nitrogen
      (refine (Radon 3))
      (refine Radon Oxygen)
@@ -295,7 +295,7 @@
      (refine 4 Oxygen Magnetised-Ferrite))
     (Salt
      (refine 2 Chlorine)
-     (refine Di-hydrogen Oxygen))
+     (refine Di=hydrogen Oxygen))
     (Silver
      (refine 250 (or Herox Aronium Dirty-Bronze)))
     (Sodium
@@ -318,7 +318,7 @@
     (Solanium
      (refine 2 Solanium Phosphorus)
      (refine (Phosphorus 2) Oxygen)
-     (refine (or Phosphorus Di-hydrogen) Sulphurine))
+     (refine (or Phosphorus Di=hydrogen) Sulphurine))
     (Star-Bulb
      (refine 2 Star-Bulb Paraffinium)
      (refine Paraffinium (or Oxygen Nitrogen)))
@@ -329,7 +329,7 @@
     (Uranium
      (refine Phosphorus (or Ferrite-Dust Pure-Ferrite))
      (refine (Gamma-Root 2) Salt)
-     (refine Radon (or Di-hydrogen Ferrite-Dust))
+     (refine Radon (or Di=hydrogen Ferrite-Dust))
      (refine 2 Radon Pure-Ferrite)
      (refine 3 Radon Magnetised-Ferrite))
     (Viscous-Fluids)
@@ -383,15 +383,15 @@
     (Deflector-Shield
      (build (Chromatic-Metal 100) (Sodium-Nitrate 25)))
     (Destablised-Sodium) ;TODO
-    (Di-hydrogen-Jelly
-     (build (Di-hydrogen 40)))
+    (Di=hydrogen-Jelly
+     (build (Di=hydrogen 40)))
     (Dirty-Bronze
      (build (Pyrite 50) (Pure-Ferrite 100))
      (refine (Pyrite 30)
              (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
              (or (Ferrite-Dust 120) (Pure-Ferrite 60))))
     (Efficient-Thrusters
-     (build Di-hydrogen-Jelly (Tritium 100) (Technology-Module 2)))
+     (build Di=hydrogen-Jelly (Tritium 100) (Technology-Module 2)))
     (Enriched-Carbon
      (refine
       (Radon 100)
@@ -399,12 +399,12 @@
       (or (Salt 10) (Chlorine 5))))
     (Explosive-Drones
      (build Walker-Brain (Gold 50)))
-    (|Frigate-Fuel (50 Tonnes)|
-     (build (Di-hydrogen 50) (Tritium 50)))
-    (|Frigate-Fuel (100 Tonnes)|
-     (build (Di-hydrogen 100) (Tritium 100)))
-    (|Frigate-Fuel (200 Tonnes)|
-     (build (Di-hydrogen 200) (Tritium 200)))
+    (|Frigate-Fuel-(50-Tonnes)|
+     (build (Di=hydrogen 50) (Tritium 50)))
+    (|Frigate-Fuel-(100-Tonnes)|
+     (build (Di=hydrogen 100) (Tritium 100)))
+    (|Frigate-Fuel-(200-Tonnes)|
+     (build (Di=hydrogen 200) (Tritium 200)))
     (Fuel-Oxidiser
      (build (Quad-Servo 2) (Gold 50)))
     (Fusion-Accelerant
@@ -441,7 +441,7 @@
     (Jetpack
      (build (Ferrite-Dust 100)))
     (Launch-Thruster
-     (build (Pure-Ferrite 100) Di-hydrogen-Jelly))
+     (build (Pure-Ferrite 100) Di=hydrogen-Jelly))
     (Lemmium
      (build (Uranium 50) (Pure-Ferrite 100))
      (refine (Uranium 30)
@@ -450,7 +450,7 @@
     (Life-Support
      (build (Ferrite-Dust 100)))
     (Life-Support-Gel
-     (build Di-hydrogen-Jelly (Carbon 20)))
+     (build Di=hydrogen-Jelly (Carbon 20)))
     (Liquid-Explosive
      (build Acid Unstable-Gel))
     (Living-Glass
@@ -508,7 +508,7 @@
     (Sodium-Diode
      (build (Sodium-Nitrate 40) (Ferrite-Dust 40)))
     (Starship-Launch-Fuel
-     (build (Di-hydrogen 40) Metal-Plating))
+     (build (Di=hydrogen 40) Metal-Plating))
     (Stasis-Device
      (build Quantum-Processor Cryogenic-Chamber Iridesite))
     (Superconductor
