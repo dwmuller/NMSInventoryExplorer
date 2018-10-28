@@ -172,7 +172,7 @@
   (define output-area
     (new horizontal-panel%
          [parent (new group-box-panel%
-                      [parent recipe-finder-result-area]
+                      [parent parent]
                       [label "Steps"])]
          [style '(auto-vscroll)]))
   (define outputs-column (new vertical-pane%
