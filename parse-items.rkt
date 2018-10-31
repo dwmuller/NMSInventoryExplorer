@@ -4,13 +4,23 @@
          xml/path
          racket/generator
          racket/date
-         "items.rkt")
+         "items.rkt"
+         "recipes.rkt")
 
 ;;; Use "NMS Modding Station" and MBINCompiler to extract the needed EXML files.
 ;;; These files are insanely verbose. The typical structure is a Data element,
 ;;; containing nested trees of Property elements with "name" attributes
 ;;; and occasional "value" attributes. About as inefficient a use of XML as you can
 ;;; imagine.
+
+;;; Adjust the following two root directories.
+;;; Run this module, examine the output. Use the REPL to look, carefully (they're large!)
+;;; at the module-level variables (id-map, recipe-list, missing-item-translations).
+;;; When satisfied, call write-generated-items and write-generated-recipes to generate
+;;; new files.
+
+;;; WARNING! This module uses a lot of memory while running. Increase the allowed memory
+;;; in Racket|Limit Memory. I suggest restarting DrRacket after finishing with it.
 
 
 (define root (simplify-path "D:/NMS-tools/out-1.65/"))
@@ -37,10 +47,10 @@
 
 (define (child-element-sequence element path [pred #f])
   (in-generator #:arity 1
-   (define (visitor e)
-     (when (or (not pred) (pred e))
-       (yield e)))
-   (visit-child-elements element path visitor)))
+                (define (visitor e)
+                  (when (or (not pred) (pred e))
+                    (yield e)))
+                (visit-child-elements element path visitor)))
 
 (define (child-element element path [pred #f])
   (define-values (any? next)
@@ -60,9 +70,21 @@
      (define child (child-element element
                                   '(Property)
                                   (λ (e) (string=? (car names) (get-attribute e 'name)))))
-     (if child (names-value child (cdr names)) #f)]))
+     (and child (names-value child (cdr names)))]))
 
-(define (scan-localization-table path language name-lower-id-map product-map)
+(define (names->children element names)
+  (cond
+    [(null? names) (child-element-sequence element '(Property))]
+    [else
+     (define child (child-element element
+                                  '(Property)
+                                  (λ (e) (string=? (car names) (get-attribute e 'name)))))
+     (and child (names->children child (cdr names)))]))
+  
+
+(define (scan-localization-table path language name-id-map id-map)
+  ; These files are huge, so avoid loading mappings in for the entire file, even though that
+  ; would seem the more obvious way to go about this.
   (define doc (read-doc path))
   (unless (and (eq? 'Data (element-name doc))
                (equal? "TkLocalisationTable" (get-attribute doc 'template)))
@@ -72,29 +94,40 @@
   (for ([elem (child-element-sequence doc '(Property Property))])
     (when (string=? "TkLocalisationEntry.xml" (get-attribute elem 'value))
       (define name-id (names-value elem '("Id")))
-      (define data (hash-ref name-lower-id-map name-id #f))
-      (when data
-        (define label (names-value elem (list language "Value")))
+      (for ([data (hash-ref name-id-map name-id null)]
+            [index (in-naturals)])
+        (define label (string-append (names-value elem (list language "Value"))
+                                     (if (zero? index) "" (format " [~a]" index))))
         (define item-name (label->item-name label))
-        (hash-remove! name-lower-id-map name-id)
-        (hash-set! product-map
-                   item-name
-                   (item$ item-name (first data) (second data) (third data) label))))))
+        (define id (first data))
+        (hash-remove! name-id-map name-id)
+        (hash-set! id-map
+                   id
+                   (item$ item-name id (second data) (third data) label))))))
 
-(define (read-items id-map path table-type items-type . extra-flags)
+(define (save-recipe elem id recipe-list)
+  (define recipe-inputs (names->children elem '("Requirements")))
+  (when (and recipe-inputs (not (null? recipe-inputs)))
+    (define recipe
+      (cons id (for/fold ([result null])
+                         ([input recipe-inputs])
+                 (define input-id (names-value input '("ID")))
+                 (define input-amount (names-value input '("Amount")))
+                 (cons (cons input-id input-amount) result))))
+    (set-box! recipe-list (cons recipe (unbox recipe-list)))))
+
+(define (read-items name-id-map save-id-set recipe-list path table-type items-type . extra-flags)
   (define doc (read-doc path))
   (unless (and (eq? 'Data (element-name doc))
                (equal? table-type (get-attribute doc 'template)))
     (raise-result-error 'read-products
                         (format "<Data template=\"~a\" ..." table-type)
                         (format "<~a template=\"~a\" ..." (element-name doc) (get-attribute doc 'template))))
-  ; TODO: Collect build recipes?
-  (define dupes (mutable-set))
   (for ([elem (child-element-sequence doc '(Property Property))]
         [index (in-naturals)])
     (when (string=? items-type (get-attribute elem 'value))
       (define name-lower-id      (names-value elem '("NameLower")))
-      (define id                 (string->symbol (or (names-value elem '("Id")) (names-value elem '("ID")))))
+      (define id                 (or (names-value elem '("Id")) (names-value elem '("ID"))))
       (define base-value         (string->number (names-value elem '("BaseValue"))))
       (define flags (for/fold ([result null])
                               ([flag-spec extra-flags])
@@ -105,54 +138,79 @@
                           result)))
       (define data (list id base-value flags))
       (cond
-        [(set-member? dupes name-lower-id)
-         (hash-set! id-map (string-append (symbol->string id) "_NAME_L") data)]
-        [(hash-has-key? id-map name-lower-id)
-         ; An attempt to deal with duplicates.
-         ; CURRENTLY: First one wins.
-         ; ALSO TRIED: Base on the fact that there are unused localization entries that would match, tried constructing alternate name reference.
-         ;             This made things worse.
-         ; ALSO TRIED: Last one wins. Not sure if this was better or worse.
-         ;(set-add! dupes name-lower-id)
-         (printf "Duplicate ref to name ~a by entry ~a: ~a in ~a~n" name-lower-id index id path)
-         ;(define prev (hash-ref id-map name-lower-id))
-         ;(hash-set! id-map (string-append (symbol->string (car prev)) "_NAME_L") prev)
-         ;(hash-set! id-map (string-append (symbol->string id) "_NAME_L") data)
-         ]
-        [else (hash-set! id-map name-lower-id data)]))))
+        [(set-member? save-id-set id)
+         (printf "Duplicate save-id: ~a, entry ~a in ~a ~n" id index path)]
+        [else
+         (set-add! save-id-set id)
+         ;(when (hash-has-key? name-id-map name-lower-id) 
+            ; Dealing with multiple references to lowercase name entries:
+            ; CURRENTLY: Keep them all, but they'll look like dupes in the UI.
+            ; ALSO TRIED: First one wins. No idea how many items we dropped.
+            ; ALSO TRIED: Base on the fact that there are unused localization entries that would match, tried constructing alternate name reference.
+            ;             This made things worse.
+            ; ALSO TRIED: Last one wins. Not sure if this was better or worse.
+            ;(printf "Duplicate ref to name ~a by entry ~a: ~a in ~a~n" name-lower-id index id path))
+         (hash-update! name-id-map name-lower-id (λ (v) (cons data v)) null)
+         (save-recipe elem id recipe-list)]))))
 
 ; Read items first, put placeholder for name text. Then translate placeholders.
-(define id-map (make-hash))
-(read-items id-map (build-path root "METADATA/REALITY/TABLES/NMS_REALITY_GCPRODUCTTABLE.EXML") "GcProductTable" "GcProductData.xml"
+(define save-id-set (mutable-set))
+(define name-id-map (make-hash))
+(define recipe-list (box null))
+
+; TODO: Load NMS_REALITY_GCPROCEDURALTECHNOLOGYTABLE? Items there do not have BaseValue.
+; Loading only the _U3REALITY_ files leaves some basic stuff undefined.
+; Loading only the _REALITY_ files seems to work OK.
+; Additionally loading the _U3REALITY files finds a lot of duplicate save ids.
+; Much investigation needed to figure out the right set.
+
+(read-items name-id-map save-id-set recipe-list (build-path root "METADATA/REALITY/TABLES/NMS_REALITY_GCPRODUCTTABLE.EXML") "GcProductTable" "GcProductData.xml"
             '("Product" "Type" "ProductCategory")
             '("Rarity" "Rarity" "Rarity")
             '("Substance" "SubstanceCategory" "SubstanceCategory"))
-(read-items id-map (build-path root "METADATA/REALITY/TABLES/NMS_REALITY_GCSUBSTANCETABLE.EXML") "GcSubstanceTable" "GcRealitySubstanceData.xml"
+(read-items name-id-map save-id-set recipe-list (build-path root "METADATA/REALITY/TABLES/NMS_REALITY_GCSUBSTANCETABLE.EXML") "GcSubstanceTable" "GcRealitySubstanceData.xml"
             '("Rarity" "Rarity" "Rarity")
             '("Substance" "SubstanceCategory" "SubstanceCategory"))
-(read-items id-map (build-path root "METADATA/REALITY/TABLES/NMS_REALITY_GCTECHNOLOGYTABLE.EXML") "GcTechnologyTable" "GcTechnology.xml"
+(read-items name-id-map save-id-set recipe-list (build-path root "METADATA/REALITY/TABLES/NMS_REALITY_GCTECHNOLOGYTABLE.EXML") "GcTechnologyTable" "GcTechnology.xml"
             '("TechShopRarity" "TechShopRarity" "TechnologyRarity")
             '("TechnologyRarity" "TechnologyRarity" "TechnologyRarity")
             '("Technology" "TechnologyCategory" "TechnologyCategory"))
-(define product-map (make-hasheq))
+;(read-items name-id-map save-id-set recipe-list (build-path root "METADATA/REALITY/TABLES/NMS_U3REALITY_GCPRODUCTTABLE.EXML") "GcProductTable" "GcProductData.xml"
+;            '("Product" "Type" "ProductCategory")
+;            '("Rarity" "Rarity" "Rarity")
+;            '("Substance" "SubstanceCategory" "SubstanceCategory"))
+;(read-items name-id-map save-id-set recipe-list (build-path root "METADATA/REALITY/TABLES/NMS_U3REALITY_GCSUBSTANCETABLE.EXML") "GcSubstanceTable" "GcRealitySubstanceData.xml"
+;            '("Rarity" "Rarity" "Rarity")
+;            '("Substance" "SubstanceCategory" "SubstanceCategory"))
+;(read-items name-id-map save-id-set recipe-list (build-path root "METADATA/REALITY/TABLES/NMS_U3REALITY_GCTECHNOLOGYTABLE.EXML") "GcTechnologyTable" "GcTechnology.xml"
+;            '("TechShopRarity" "TechShopRarity" "TechnologyRarity")
+;            '("TechnologyRarity" "TechnologyRarity" "TechnologyRarity")
+;            '("Technology" "TechnologyCategory" "TechnologyCategory"))
+
+(define id-map (make-hash))
 
 ; By default, my game seems to be using U.K. English rather than U.S. English, so let's stick with that.
-;(scan-localization-table (build-path root "LANGUAGE/NMS_LOC1_USENGLISH.EXML") "USEnglish" id-map product-map)
-;(scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_USENGLISH.EXML") "USEnglish" id-map product-map)
-;(scan-localization-table (build-path root "LANGUAGE/NMS_UPDATE3_USENGLISH.EXML") "USEnglish" id-map product-map)
-(scan-localization-table (build-path root "LANGUAGE/NMS_LOC1_ENGLISH.EXML") "English" id-map product-map)
-(scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_ENGLISH.EXML") "English" id-map product-map)
-(scan-localization-table (build-path root "LANGUAGE/NMS_UPDATE3_ENGLISH.EXML") "English" id-map product-map)
+;(scan-localization-table (build-path root "LANGUAGE/NMS_LOC1_USENGLISH.EXML") "USEnglish" name-id-map id-map)
+;(scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_USENGLISH.EXML") "USEnglish" name-id-map id-map)
+;(scan-localization-table (build-path root "LANGUAGE/NMS_UPDATE3_USENGLISH.EXML") "USEnglish" name-id-map id-map)
+(scan-localization-table (build-path root "LANGUAGE/NMS_LOC1_ENGLISH.EXML") "English" name-id-map id-map)
+(scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_ENGLISH.EXML") "English" name-id-map id-map)
+(scan-localization-table (build-path root "LANGUAGE/NMS_UPDATE3_ENGLISH.EXML") "English" name-id-map id-map)
 
 ; Attempted additional scans to find missing items; no luck.
-;(scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_ENGLISH.EXML") "English" id-map product-map)
+;(scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_ENGLISH.EXML") "English" name-id-map id-map)
 
-(define missing-item-translations (set-subtract (map car (hash-values id-map)) (map (λ (v) (item$-id v)) (hash-values product-map))))
-(printf "Found and translated ~a items.~n" (length (hash-keys product-map)))
-(unless (null? missing-item-translations)
-  (printf "Missing translations for ~a items.~n" (length missing-item-translations)))
-(pretty-print (list 'Flags (sort (remove-duplicates (append-map (λ (v) (item$-flags v)) (hash-values product-map))) symbol<?)))
+(printf "Found and translated ~a items.~n" (length (hash-keys id-map)))
+(unless (null? (hash-keys name-id-map))
+  (printf "Missing translations for ~a items.~n" (length (hash-keys name-id-map))))
+(pretty-print (list 'Flags (sort (remove-duplicates (append-map (λ (v) (item$-flags v)) (hash-values id-map))) symbol<?)))
 
+(for ([lst (hash-values name-id-map)])
+  (for ([i lst])
+    (define item-fake-name (string->symbol (car i)))
+    (define id (car i))
+    (hash-set! id-map id (item$ item-fake-name id (second i) (third i) id))))
+    
 (define (write-generated-items)
   (call-with-output-file (build-path output-root "generated-items.rkt") #:mode 'text #:exists 'replace
     (λ (port)
@@ -164,6 +222,29 @@
       (displayln (format "; Generated via parse-items.rkt by ~a at ~a" user timestamp) port)
       (pretty-write '(require "items.rkt") port)
       (writeln port)
-      (pretty-write (list 'define 'generated-items product-map) port)
+      (pretty-write (list 'define 'generated-items (list 'quote (hash-values id-map))) port)
       (writeln port)
-      (pretty-write '(for ([item (hash-values generated-items)]) (add-item item)) port))))
+      (pretty-write '(for ([item generated-items]) (add-item item)) port))))
+
+(define resolved-recipes
+  (for/list ([r (unbox recipe-list)])
+    (list (item$-name (hash-ref id-map (car r)))
+          (for/list ([i (cdr r)])
+            (cons (item$-name (hash-ref id-map (car i))) (cdr i))))))
+
+(define (write-generated-recipes)
+  (call-with-output-file (build-path output-root "generated-recipes.rkt") #:mode 'text #:exists 'replace
+    (λ (port)
+      (displayln "#lang racket" port)
+      (define timestamp (parameterize ([date-display-format 'iso-8601])
+                          (let ([d (seconds->date (current-seconds))])
+                            (format "~a ~a" (date->string d #t) (date*-time-zone-name d)))))
+      (define user (getenv "USERNAME"))
+      (displayln (format "; Generated via parse-items.rkt by ~a at ~a" user timestamp) port)
+      (pretty-write '(require "items.rkt" "recipes.rkt") port)
+      (writeln port)
+      (pretty-write (list 'define 'generated-recipes (list 'quote (unbox recipe-list))) port)
+      (pretty-write
+       '(for ([r generated-recipes])
+          (add-recipe-by-names r))
+       port))))

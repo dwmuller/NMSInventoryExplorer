@@ -1,259 +1,615 @@
-#lang racket
+#reader(lib"read.ss""wxme")WXME0108 ## 
+#|
+   This file uses the GRacket editor format.
+   Open this file in DrRacket version 7.1 or later to read it.
 
-;;;
-;;; Define all items
-;;;
+   Most likely, it was created by saving a program in DrRacket,
+   and it probably contains a program with non-text elements
+   (such as images or comment boxes).
 
-(provide (struct-out item$)
-         get-item
-         get-item-by-save-id
-         get-sorted-item-names
-         item-name->label
-         item->label
-         label->item-name
-         label->item
-         add-item)
-
-(define logging #t)
-
-(struct item$ (name
-               id
-               base-value
-               flags
-               label) #:prefab)
-
-(define (item-name->label sym)
-  (string-replace (string-replace (symbol->string sym) "-" " ") "=" "-"))
-
-(define (item->label item)
-  (item-name->label (item$-name item)))
-
-(define (label->item-name label)
-  (string->symbol (string-replace (string-replace label "-" "=") " " "-")))
-
-(define (label->item label)
-  (get-item (label->item-name label)))
-
-; This list is not complete. Each entry lists a symbol to represent
-; a kind of item in the game, an optional base value, and an optional
-; ID string as used in the save files. Without the ID, the item cannot
-; be recognized in save files. The base values are not used at this time.
-;
-; For items thought to be available only from special sources (e.g. sentinel machines),
-; the value is set to 1 billion.
-;
-; TODO: The item list is incomplete.
-; TODO: Capture and use the game's icons for items.
-;       Store these in a separate file. (Racket-specific file formats
-;       can include bitmap objects, but can still be edited easily
-;       in DrRacket. Seems a shame not to leverage that unique ability.)
-;
-(define raw-items
-  '(
-    ;;
-    ;; Resources
-    ;;
-    (Activated-Cadmium 450 "EX_RED")
-    (Activated-Copper 245)
-    (Activated-Emeril 696 "EX_GREEN")
-    (Activated-Indium 949 "EX_BLUE")
-    (Ammonia 62 "TOXIC1")
-    (Cactus-Flesh 28 "PLANT_DUST")
-    (Cadmium 234 "RED2")
-    (Carbon 7 "FUEL1")
-    (Chlorine 602 "WATER2")
-    (Chromatic-Metal 245 "STELLAR2")
-    (Cobalt 198 "CAVE1")
-    (Condensed-Carbon 24 "FUEL2")
-    (Copper 110 "YELLOW2")
-    (Coprite 30 "PLANT_POOP")
-    (Deuterium 34 "LAUNCHSUB2")
-    (Di=hydrogen 34 "LAUNCHSUB")
-    (Dioxite 62 "COLD1")
-    (Emeril 275 "GREEN2")
-    (Ferrite-Dust 14 "LAND1")
-    (Frost-Crystal 12)
-    (Fungal-Mould 16 "PLANT_TOXIC")
-    (Gamma-Root 16 "PLANT_RADIO")
-    (Gold 202 "ASTEROID2")
-    (Indium 464 "BLUE2")
-    (Ionised-Cobalt 401 "CAVE2")
-    (Kelp-Sac 41)
-    (Living-Slime 20)
-    (Magnetised-Ferrite 82 "LAND3")
-    (Marrow-Bulb 41 "PLANT_CAVE")
-    (Mordite 40 "CREATURE1")
-    (Nitrogen 20 "GAS3")
-    (Oxygen 34 "OXYGEN")
-    (Paraffinium 62 "LUSH1")
-    (Phosphorus 62 "HOT1")
-    (Platinum 303 "ASTEROID3")
-    (Pugneum 138 "ROBOT1")
-    (Pure-Ferrite 14 "LAND2")
-    (Pyrite 62 "DUSTY1")
-    (Radon 20 "GAS2")
-    (Residual-Goop 20)
-    (Runaway-Mould 20)
-    (Rusted-Metal 20)
-    (Salt 299 "WATER1")
-    (Silver 101 "ASTEROID1")
-    (Sodium 41 "CATALYST1")
-    (Sodium-Nitrate 82 "CATALYST2")
-    (Solanium 70 "PLANT_HOT")
-    (Star-Bulb 32 "PLANT_LUSH")
-    (Sulphurine 20 "GAS1")
-    (Tritium 6 "ROCKETSUB")
-    (Uranium 62 "RADIO1")
-    (Viscous-Fluids 20)
-
-    ;; Other items
-    (A-Class-Defence-Systems-Upgrade "UP_SHLD3" installed)
-    (Acid 188000 "FARMPROD1")
-    (Advanced-Ion-Battery 500 "POWERCELL2")
-    (Aronium 25000 "ALLOY1")
-    (Antimatter 5233 "ANTIMATTER")
-    (Antimatter-Housing 6500)
-    (AtlasPass-v1 "ACCESS1")
-    (AtlasPass-v2 "ACCESS2")
-    (AtlasPass-v3 "ACCESS3")
-    (Atmosphere-Harvester "BUILDGASHARVEST")
-    (Base-Computer "BASE_FLAG")
-    (Beacon "BUILDBEACON")
-    (Blaze-Javelin-Module-\(A\) "U_RAIL3")
-    (C-Class-Deflector-Shield-Upgrade "UP_S_SHL1" installed)
-    (Carbon-Crystal "FUELPROD3")
-    (Carbon-Nanotubes 500 "TRA_ALLOY1")
-    (Chloride-Lattice "WATERPROD3")
-    (Circuit-Board 916250)
-    (Cobalt-Mirror 20500)
-    (Cryo=Pump 1500000 "COMPOUND6")
-    (Cryogenic-Chamber 3800000 "MEGAPROD3")
-    (Cyclotron-Module-\(C\) "U_SHIPBLOB1")
-    (Deflector-Shield "SHIPSHIELD" installed)
-    (Destablised-Sodium 12300)
-    (Di=hydrogen-Jelly 200 "JELLY")
-    (Dirty-Bronze "ALLOY2")
-    (Efficient-Thrusters "UT_LAUNCHER" installed)
-    (Enriched-Carbon 50000 "REACTION2")
-    (Explosive-Drones 75000)
-    (|Frigate-Fuel-(50-Tonnes)| 20000 "FRIGATE_FUEL_1") ; verify
-    (|Frigate-Fuel-(100-Tonnes)| "FRIGATE_FUEL_2")
-    (|Frigate-Fuel-(200-Tonnes)| "FRIGATE_FUEL_3")
-    (Frost-Crystal "PLANT_SNOW")
-    (Fuel-Oxidiser 75000 "FRIG_BOOST_SPD")
-    (Fusion-Accelerant "COMPOUND4")
-    (Gek-Relic "TRA_CURIO1")
-    (Geodesite 150000 "ALLOY7")
-    (Glass 13000)
-    (Grantine 25000 "ALLOY6")
-    (Gravitino-Ball "GRAVBALL")
-    (Hazard-Protection "PROTECT" installed)
-    (Heat-Capacitor 180000)
-    (Hermetic-Seal 800)
-    (Herox 25000 "ALLOY3")
-    (Holographic-Analyser 75000 "FRIG_BOOST_EXP")
-    (Hot-Ice 320000)
-    (Hyperdrive "HYPERDRIVE" installed)
-    (|Infra=Knife-Module-(A)| "U_SHIPMINI3")
-    (Ion-Battery 200 "POWERCELL")
-    (Iridesite 150000 "ALLOY8")
-    (Jetpack "JET1" installed)
-    (Korvax-Casing "EXP_CURIO1")
-    (Korvax-Convergence-Cube "EXP_CURIO2")
-    (Launch-Thruster "LAUNCHER" installed)
-    (Lemmium 25000 "ALLOY4")
-    (Life-Support "ENERGY" installed)
-    (Life-Support-Gel 200 "PRODFUEL2")
-    (Liquid-Explosive 800500)
-    (Living-Glass 566000)
-    (Lubricant 566000)
-    (Magno=Gold 25000 "ALLOY5")
-    (Metal-Plating 800)
-    (Microprocessor 2000 "MICROCHIP")
-    (Mind-Control-Device 75000 "FRIG_BOOST_TRA")
-    (Mineral-Compressor 75000 "FRIG_BOOST_MIN")
-    (Navigation-Data "NAV_DATA")
-    (NipNip-Buds "NIPNIPBUDS")
-    (Nitrogen-Salt 50000 "REACTION3")
-    (Organic-Catalyst 320000 "COMPOUND1")
-    (Poly-Fibre 130000)
-    (Portable-Refiner "BUILD_REFINER1")
-    (Projectile-Ammunition "AMMO")
-    (Oxygen-Capsule 350 "PRODFUEL1")
-    (Oxygen-Filter 615)
-    (Photon-Cannon "SHIPGUN1")
-    (|Photon-Cannon-Module-(B)| "U_SHIPGUN2")
-    (Projectile-Ammunition 50)
-    (Pulse-Engine "SHIPJUMP1" installed)
-    (Quad-Servo 1000000000 "QUAD_PROD")
-    (Quantum-Processor 4400000)
-    (Rare-Metal-Element "LANDPROD3")
-    (S-Class-Defence-Systems-Upgrade "UP_SHLD4" installed)
-    (S-Class-Hyperdrive-Upgrade "UP_HYP4" installed)
-    (S-Class-Life-Support-Upgrade "UP_ENGY3" installed)
-    (S-Class-Movement-System-Upgrade "UP_JET4" installed)
-    (S-Class-Photon-Cannon-Upgrade "UP_SGUN4" installed)
-    (Salt-Refractor 30500)
-    (Semiconductor 320000)
-    (Signal-Booster "BUILDSIGNAL")
-    (Sodium-Diode 3500)
-    (Starship-Launch-Fuel 450 "LAUNCHFUEL")
-    (Starship-Shield-Module-\(C\) "U_SHIPSHIELD1")
-    (Stasis-Device 15600000)
-    (Superconductor 1500000 "COMPOUND5")
-    (Superoxide-Crystal "OXYPROD3")
-    (Technology-Module)
-    (TetraCobalt "CAVEPROD3")
-    (Thermic-Condensate 50000 "REACTION1")
-    (Unstable-Gel 50000)
-    (Unstable-Plasma 5750 "GRENFUEL1")
-    (Vy\'keen-Dagger "WAR_CURIO2")
-    (Vy\'keen-Effigy "WAR_CURIO1")
-    (Walker-Brain 1000000000)
-    (Warp-Cell 46750 "HYPERFUEL1")))
-
-#;(define items (make-hasheq
-               (for/list ([def raw-items])
-                 (match def
-                   [(list (? symbol? n) (? string? id) (? symbol? flags) ...)
-                    (cons n (item$ n id (void) flags (item-name->label n)))]
-                   [(list (? symbol? n) (? integer? v) (? string? id) (? symbol? flags) ...)
-                    (cons n (item$ n id v flags (item-name->label n)))]
-                   [(list (? symbol? n) (? integer? v) (? symbol? flags) ...)
-                    (cons n (item$ n (void) v flags (item-name->label n)))]
-                   [(list (? symbol? n) (? symbol? flags) ...)
-                    (cons n (item$ n (void) (void) flags (item-name->label n)))]
-                   [(? symbol? n)
-                      (cons n (item$ n (void) (void) '() (item-name->label n)))]))))
-(define items (make-hasheq))
-
-(define (get-item name)
-  (define result (hash-ref items name #f))
-  (unless result
-    (raise-argument-error 'get-item "defined item name symbol" name))
-  result)
-
-(define items-by-save-id
-  (make-hash
-   (for/list ([i (hash-values items)]
-              #:unless (void? (item$-id i)))
-     (cons (item$-id i) i))))
-
-(define (get-item-by-save-id id [default (void)])
-  (define match (regexp-match "^\\^([^#]+)(#[0-9]+)?" id))
-  (unless match (raise-argument-error 'get-item-by-save-id "item save identifier in form ^id(#num)?" id))
-  (define key (string->symbol (second match)))
-  (define result (hash-ref items-by-save-id key default))
-  (unless result
-    (when logging
-      (printf "Item save identifier not found: ~a~n" key)))
-  result)
-
-(define (get-sorted-item-names)
-  (sort (hash-keys items) symbol<?))
-
-(define (add-item item)
-  (hash-set! items (item$-name item) item)
-  (hash-set! items-by-save-id (item$-id item) item))
-
-         
+            http://racket-lang.org/
+|#
+ 33 7 #"wxtext\0"
+3 1 6 #"wxtab\0"
+1 1 8 #"wximage\0"
+2 0 8 #"wxmedia\0"
+4 1 34 #"(lib \"syntax-browser.ss\" \"mrlib\")\0"
+1 0 36 #"(lib \"cache-image-snip.ss\" \"mrlib\")\0"
+1 0 68
+(
+ #"((lib \"image-core.ss\" \"mrlib\") (lib \"image-core-wxme.rkt\" \"mr"
+ #"lib\"))\0"
+) 1 0 16 #"drscheme:number\0"
+3 0 44 #"(lib \"number-snip.ss\" \"drscheme\" \"private\")\0"
+1 0 36 #"(lib \"comment-snip.ss\" \"framework\")\0"
+1 0 93
+(
+ #"((lib \"collapsed-snipclass.ss\" \"framework\") (lib \"collapsed-sni"
+ #"pclass-wxme.ss\" \"framework\"))\0"
+) 0 0 43 #"(lib \"collapsed-snipclass.ss\" \"framework\")\0"
+0 0 19 #"drscheme:sexp-snip\0"
+0 0 29 #"drscheme:bindings-snipclass%\0"
+1 0 101
+(
+ #"((lib \"ellipsis-snip.rkt\" \"drracket\" \"private\") (lib \"ellipsi"
+ #"s-snip-wxme.rkt\" \"drracket\" \"private\"))\0"
+) 2 0 88
+(
+ #"((lib \"pict-snip.rkt\" \"drracket\" \"private\") (lib \"pict-snip.r"
+ #"kt\" \"drracket\" \"private\"))\0"
+) 0 0 55
+#"((lib \"snip.rkt\" \"pict\") (lib \"snip-wxme.rkt\" \"pict\"))\0"
+1 0 34 #"(lib \"bullet-snip.rkt\" \"browser\")\0"
+0 0 25 #"(lib \"matrix.ss\" \"htdp\")\0"
+1 0 22 #"drscheme:lambda-snip%\0"
+1 0 29 #"drclickable-string-snipclass\0"
+0 0 26 #"drracket:spacer-snipclass\0"
+0 0 57
+#"(lib \"hrule-snip.rkt\" \"macro-debugger\" \"syntax-browser\")\0"
+1 0 26 #"drscheme:pict-value-snip%\0"
+0 0 45 #"(lib \"image-snipr.ss\" \"slideshow\" \"private\")\0"
+1 0 38 #"(lib \"pict-snipclass.ss\" \"slideshow\")\0"
+2 0 55 #"(lib \"vertical-separator-snip.ss\" \"stepper\" \"private\")\0"
+1 0 18 #"drscheme:xml-snip\0"
+1 0 31 #"(lib \"xml-snipclass.ss\" \"xml\")\0"
+1 0 21 #"drscheme:scheme-snip\0"
+2 0 34 #"(lib \"scheme-snipclass.ss\" \"xml\")\0"
+1 0 10 #"text-box%\0"
+1 0 32 #"(lib \"text-snipclass.ss\" \"xml\")\0"
+1 0 1 6 #"wxloc\0"
+          0 0 55 0 1 #"\0"
+0 75 1 #"\0"
+0 10 90 -1 90 -1 3 -1 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 255 255 255 1 -1 0 9
+#"Standard\0"
+0 75 17 #"DejaVu Sans Mono\0"
+0 10 90 -1 90 -1 3 -1 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 255 255 255 1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 1 1 1 1 1 1 0 0 0 0 0 0 -1 -1 2 24
+#"framework:default-color\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 1 1 1 150 0 150 0 0 0 -1 -1 2 15
+#"text:ports out\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 150 0 150 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1.0 0 -1 -1 93 -1 -1 -1 0 0 0 0 0 0 0 0 0 1.0 1.0 1.0 255 0 0 0 0 0 -1
+-1 2 15 #"text:ports err\0"
+0 -1 1 #"\0"
+1 0 -1 -1 93 -1 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 255 0 0 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 175 0 0 0 -1 -1 2 17
+#"text:ports value\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 0 0 175 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1.0 0 92 -1 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 1.0 1.0 1.0 34 139 34 0 0 0 -1
+-1 2 27 #"Matching Parenthesis Style\0"
+0 -1 1 #"\0"
+1.0 0 92 -1 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 1.0 1.0 1.0 34 139 34 0 0 0 -1
+-1 2 1 #"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 38 38 128 0 0 0 -1 -1 2 37
+#"framework:syntax-color:scheme:symbol\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 38 38 128 0 0 0 -1 -1 2 38
+#"framework:syntax-color:scheme:keyword\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 38 38 128 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 194 116 31 0 0 0 -1 -1 2
+38 #"framework:syntax-color:scheme:comment\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 194 116 31 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 41 128 38 0 0 0 -1 -1 2 37
+#"framework:syntax-color:scheme:string\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 41 128 38 0 0 0 -1 -1 2 35
+#"framework:syntax-color:scheme:text\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 41 128 38 0 0 0 -1 -1 2 39
+#"framework:syntax-color:scheme:constant\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 41 128 38 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 132 60 36 0 0 0 -1 -1 2 49
+#"framework:syntax-color:scheme:hash-colon-keyword\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 132 60 36 0 0 0 -1 -1 2 42
+#"framework:syntax-color:scheme:parenthesis\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 132 60 36 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 255 0 0 0 0 0 -1 -1 2 36
+#"framework:syntax-color:scheme:error\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 255 0 0 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 -1 -1 2 36
+#"framework:syntax-color:scheme:other\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 -1 -1 2 16
+#"Misspelled Text\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 81 112 203 0 0 0 -1 -1 2
+38 #"drracket:check-syntax:lexically-bound\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 81 112 203 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 178 34 34 0 0 0 -1 -1 2 28
+#"drracket:check-syntax:set!d\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 178 34 34 0 0 0 -1 -1 2 37
+#"drracket:check-syntax:unused-require\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 255 0 0 0 0 0 -1 -1 2 36
+#"drracket:check-syntax:free-variable\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 255 0 0 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 68 0 203 0 0 0 -1 -1 2 31
+#"drracket:check-syntax:imported\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 68 0 203 0 0 0 -1 -1 2 47
+#"drracket:check-syntax:my-obligation-style-pref\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 178 34 34 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 0 116 0 0 0 0 -1 -1 2 50
+#"drracket:check-syntax:their-obligation-style-pref\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 0 116 0 0 0 0 -1 -1 2 48
+#"drracket:check-syntax:unk-obligation-style-pref\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 139 142 28 0 0 0 -1 -1 2
+49 #"drracket:check-syntax:both-obligation-style-pref\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 139 142 28 0 0 0 -1 -1 2
+26 #"plt:htdp:test-coverage-on\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 -1 -1 2 1
+#"\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 1 0 0 0 0 0 0 255 165 0 0 0 0 -1 -1 2 27
+#"plt:htdp:test-coverage-off\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 1 0 0 0 0 0 0 255 165 0 0 0 0 -1 -1 4 1
+#"\0"
+0 70 1 #"\0"
+1.0 0 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 1.0 1.0 1.0 1.0 1.0 1.0 0 0 0 0 0 0
+-1 -1 4 4 #"XML\0"
+0 70 1 #"\0"
+1.0 0 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 1.0 1.0 1.0 1.0 1.0 1.0 0 0 0 0 0 0
+-1 -1 2 37 #"plt:module-language:test-coverage-on\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 -1 -1 2 38
+#"plt:module-language:test-coverage-off\0"
+0 -1 1 #"\0"
+1 0 -1 -1 -1 93 -1 -1 0 1 0 0 0 1 0 0 0 0 0 0 255 165 0 0 0 0 -1 -1 4 1
+#"\0"
+0 71 1 #"\0"
+1.0 0 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 1.0 1.0 1.0 1.0 1.0 1.0 0 0 0 0 0 0
+-1 -1 4 1 #"\0"
+0 -1 1 #"\0"
+1.0 0 -1 -1 -1 -1 -1 -1 1 0 0 0 0 0 0 0 0 1.0 1.0 1.0 0 0 255 0 0 0 -1
+-1 4 1 #"\0"
+0 71 1 #"\0"
+1.0 0 -1 -1 -1 -1 -1 -1 1 0 0 0 0 0 0 0 0 1.0 1.0 1.0 0 0 255 0 0 0 -1
+-1 4 1 #"\0"
+0 71 1 #"\0"
+1.0 0 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 1.0 1.0 1.0 0 100 0 0 0 0 -1
+-1           0 393 0 28 3 12 #"#lang racket"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 17 3 3 #";;;"
+0 0 24 29 1 #"\n"
+0 0 17 3 20 #";;; Define all items"
+0 0 24 29 1 #"\n"
+0 0 17 3 3 #";;;"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 14 3 7 #"provide"
+0 0 24 3 2 #" ("
+0 0 14 3 10 #"struct-out"
+0 0 24 3 1 #" "
+0 0 14 3 5 #"item$"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 3 9 #"         "
+0 0 14 3 8 #"get-item"
+0 0 24 29 1 #"\n"
+0 0 24 3 9 #"         "
+0 0 14 3 19 #"get-item-by-save-id"
+0 0 24 29 1 #"\n"
+0 0 24 3 9 #"         "
+0 0 14 3 21 #"get-sorted-item-names"
+0 0 24 29 1 #"\n"
+0 0 24 3 9 #"         "
+0 0 14 3 16 #"item-name->label"
+0 0 24 29 1 #"\n"
+0 0 24 3 9 #"         "
+0 0 14 3 11 #"item->label"
+0 0 24 29 1 #"\n"
+0 0 24 3 9 #"         "
+0 0 14 3 16 #"label->item-name"
+0 0 24 29 1 #"\n"
+0 0 24 3 9 #"         "
+0 0 14 3 11 #"label->item"
+0 0 24 29 1 #"\n"
+0 0 24 3 9 #"         "
+0 0 14 3 8 #"add-item"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 15 3 6 #"define"
+0 0 24 3 1 #" "
+0 0 14 3 7 #"logging"
+0 0 24 3 1 #" "
+0 0 21 3 2 #"#t"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 15 3 6 #"struct"
+0 0 24 3 1 #" "
+0 0 14 3 5 #"item$"
+0 0 24 3 2 #" ("
+0 0 14 3 4 #"name"
+0 0 24 29 1 #"\n"
+0 0 24 3 15 #"               "
+0 0 14 3 2 #"id"
+0 0 24 29 1 #"\n"
+0 0 24 3 15 #"               "
+0 0 14 3 10 #"base-value"
+0 0 24 29 1 #"\n"
+0 0 24 3 15 #"               "
+0 0 14 3 5 #"flags"
+0 0 24 29 1 #"\n"
+0 0 24 3 15 #"               "
+0 0 14 3 5 #"label"
+0 0 24 3 2 #") "
+0 0 23 3 8 #"#:prefab"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 15 3 6 #"define"
+0 0 24 3 2 #" ("
+0 0 14 3 16 #"item-name->label"
+0 0 24 3 1 #" "
+0 0 14 3 3 #"sym"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 14 3 14 #"string-replace"
+0 0 24 3 2 #" ("
+0 0 14 3 14 #"string-replace"
+0 0 24 3 2 #" ("
+0 0 14 3 14 #"symbol->string"
+0 0 24 3 1 #" "
+0 0 14 3 3 #"sym"
+0 0 24 3 2 #") "
+0 0 19 3 3 #"\"-\""
+0 0 24 3 1 #" "
+0 0 19 3 3 #"\" \""
+0 0 24 3 2 #") "
+0 0 19 3 3 #"\"=\""
+0 0 24 3 1 #" "
+0 0 19 3 3 #"\"-\""
+0 0 24 3 2 #"))"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 15 3 6 #"define"
+0 0 24 3 2 #" ("
+0 0 14 3 11 #"item->label"
+0 0 24 3 1 #" "
+0 0 14 3 4 #"item"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 14 3 16 #"item-name->label"
+0 0 24 3 2 #" ("
+0 0 14 3 10 #"item$-name"
+0 0 24 3 1 #" "
+0 0 14 3 4 #"item"
+0 0 24 3 3 #")))"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 15 3 6 #"define"
+0 0 24 3 2 #" ("
+0 0 14 3 16 #"label->item-name"
+0 0 24 3 1 #" "
+0 0 14 3 5 #"label"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 14 3 14 #"string->symbol"
+0 0 24 3 2 #" ("
+0 0 14 3 14 #"string-replace"
+0 0 24 3 2 #" ("
+0 0 14 3 14 #"string-replace"
+0 0 24 3 1 #" "
+0 0 14 3 5 #"label"
+0 0 24 3 1 #" "
+0 0 19 3 3 #"\"-\""
+0 0 24 3 1 #" "
+0 0 19 3 3 #"\"=\""
+0 0 24 3 2 #") "
+0 0 19 3 3 #"\" \""
+0 0 24 3 1 #" "
+0 0 19 3 3 #"\"-\""
+0 0 24 3 3 #")))"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 15 3 6 #"define"
+0 0 24 3 2 #" ("
+0 0 14 3 11 #"label->item"
+0 0 24 3 1 #" "
+0 0 14 3 5 #"label"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 14 3 8 #"get-item"
+0 0 24 3 2 #" ("
+0 0 14 3 16 #"label->item-name"
+0 0 24 3 1 #" "
+0 0 14 3 5 #"label"
+0 0 24 3 3 #")))"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 15 3 6 #"define"
+0 0 24 3 1 #" "
+0 0 14 3 5 #"items"
+0 0 24 3 2 #" ("
+0 0 14 3 11 #"make-hasheq"
+0 0 24 3 2 #"))"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 15 3 6 #"define"
+0 0 24 3 2 #" ("
+0 0 14 3 8 #"get-item"
+0 0 24 3 1 #" "
+0 0 14 3 4 #"name"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 15 3 6 #"define"
+0 0 24 3 1 #" "
+0 0 14 3 6 #"result"
+0 0 24 3 2 #" ("
+0 0 14 3 8 #"hash-ref"
+0 0 24 3 1 #" "
+0 0 14 3 5 #"items"
+0 0 24 3 1 #" "
+0 0 14 3 4 #"name"
+0 0 24 3 1 #" "
+0 0 21 3 2 #"#f"
+0 0 24 3 2 #"))"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 15 3 6 #"unless"
+0 0 24 3 1 #" "
+0 0 14 3 6 #"result"
+0 0 24 29 1 #"\n"
+0 0 24 3 5 #"    ("
+0 0 14 3 20 #"raise-argument-error"
+0 0 24 3 1 #" "
+0 0 21 3 1 #"'"
+0 0 14 3 8 #"get-item"
+0 0 24 3 1 #" "
+0 0 19 3 26 #"\"defined item name symbol\""
+0 0 24 3 1 #" "
+0 0 14 3 4 #"name"
+0 0 24 3 2 #"))"
+0 0 24 29 1 #"\n"
+0 0 24 3 2 #"  "
+0 0 14 3 6 #"result"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 15 3 6 #"define"
+0 0 24 3 1 #" "
+0 0 14 3 16 #"items-by-save-id"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 14 3 9 #"make-hash"
+0 0 24 29 1 #"\n"
+0 0 24 3 4 #"   ("
+0 0 15 3 8 #"for/list"
+0 0 24 3 3 #" (["
+0 0 14 3 1 #"i"
+0 0 24 3 2 #" ("
+0 0 14 3 11 #"hash-values"
+0 0 24 3 1 #" "
+0 0 14 3 5 #"items"
+0 0 24 3 2 #")]"
+0 0 24 29 1 #"\n"
+0 0 24 3 14 #"              "
+0 0 23 3 8 #"#:unless"
+0 0 24 3 2 #" ("
+0 0 14 3 5 #"void?"
+0 0 24 3 2 #" ("
+0 0 14 3 8 #"item$-id"
+0 0 24 3 1 #" "
+0 0 14 3 1 #"i"
+0 0 24 3 3 #")))"
+0 0 24 29 1 #"\n"
+0 0 24 3 6 #"     ("
+0 0 14 3 4 #"cons"
+0 0 24 3 2 #" ("
+0 0 14 3 8 #"item$-id"
+0 0 24 3 1 #" "
+0 0 14 3 1 #"i"
+0 0 24 3 2 #") "
+0 0 14 3 1 #"i"
+0 0 24 3 4 #"))))"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 15 3 6 #"define"
+0 0 24 3 2 #" ("
+0 0 14 3 19 #"get-item-by-save-id"
+0 0 24 3 1 #" "
+0 0 14 3 2 #"id"
+0 0 24 3 2 #" ["
+0 0 15 3 7 #"default"
+0 0 24 3 2 #" ("
+0 0 14 3 4 #"void"
+0 0 24 3 3 #")])"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 15 3 6 #"define"
+0 0 24 3 1 #" "
+0 0 15 3 5 #"match"
+0 0 24 3 2 #" ("
+0 0 14 3 12 #"regexp-match"
+0 0 24 3 1 #" "
+0 0 19 3 25 #"\"^\\\\^?([^#]+)(#[0-9]+)?$\""
+0 0 24 3 1 #" "
+0 0 14 3 2 #"id"
+0 0 24 3 2 #"))"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 15 3 6 #"unless"
+0 0 24 3 1 #" "
+0 0 15 3 5 #"match"
+0 0 24 3 2 #" ("
+0 0 14 3 20 #"raise-argument-error"
+0 0 24 3 1 #" "
+0 0 21 3 1 #"'"
+0 0 14 3 19 #"get-item-by-save-id"
+0 0 24 3 1 #" "
+0 0 19 3 42 #"\"item save identifier in form ^?id(#num)?\""
+0 0 24 3 1 #" "
+0 0 14 3 2 #"id"
+0 0 24 3 2 #"))"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 15 3 6 #"define"
+0 0 24 3 1 #" "
+0 0 14 3 3 #"key"
+0 0 24 3 2 #" ("
+0 0 14 3 6 #"second"
+0 0 24 3 1 #" "
+0 0 15 3 5 #"match"
+0 0 24 3 2 #"))"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 15 3 6 #"define"
+0 0 24 3 1 #" "
+0 0 14 3 6 #"result"
+0 0 24 3 2 #" ("
+0 0 14 3 8 #"hash-ref"
+0 0 24 3 1 #" "
+0 0 14 3 16 #"items-by-save-id"
+0 0 24 3 1 #" "
+0 0 14 3 3 #"key"
+0 0 24 3 1 #" "
+0 0 15 3 7 #"default"
+0 0 24 3 2 #"))"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 15 3 6 #"unless"
+0 0 24 3 1 #" "
+0 0 14 3 6 #"result"
+0 0 24 29 1 #"\n"
+0 0 24 3 5 #"    ("
+0 0 15 3 4 #"when"
+0 0 24 3 1 #" "
+0 0 14 3 7 #"logging"
+0 0 24 29 1 #"\n"
+0 0 24 3 7 #"      ("
+0 0 14 3 6 #"printf"
+0 0 24 3 1 #" "
+0 0 19 3 38 #"\"Item save identifier not found: ~a~n\""
+0 0 24 3 1 #" "
+0 0 14 3 3 #"key"
+0 0 24 3 3 #")))"
+0 0 24 29 1 #"\n"
+0 0 24 3 2 #"  "
+0 0 14 3 6 #"result"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 15 3 6 #"define"
+0 0 24 3 2 #" ("
+0 0 14 3 21 #"get-sorted-item-names"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 14 3 4 #"sort"
+0 0 24 3 2 #" ("
+0 0 14 3 9 #"hash-keys"
+0 0 24 3 1 #" "
+0 0 14 3 5 #"items"
+0 0 24 3 2 #") "
+0 0 14 3 8 #"symbol<?"
+0 0 24 3 2 #"))"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 1 #"("
+0 0 15 3 6 #"define"
+0 0 24 3 2 #" ("
+0 0 14 3 8 #"add-item"
+0 0 24 3 1 #" "
+0 0 14 3 4 #"item"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 14 3 9 #"hash-set!"
+0 0 24 3 1 #" "
+0 0 14 3 5 #"items"
+0 0 24 3 2 #" ("
+0 0 14 3 10 #"item$-name"
+0 0 24 3 1 #" "
+0 0 14 3 4 #"item"
+0 0 24 3 2 #") "
+0 0 14 3 4 #"item"
+0 0 24 3 1 #")"
+0 0 24 29 1 #"\n"
+0 0 24 3 3 #"  ("
+0 0 14 3 9 #"hash-set!"
+0 0 24 3 1 #" "
+0 0 14 3 16 #"items-by-save-id"
+0 0 24 3 2 #" ("
+0 0 14 3 8 #"item$-id"
+0 0 24 3 1 #" "
+0 0 14 3 4 #"item"
+0 0 24 3 2 #") "
+0 0 14 3 4 #"item"
+0 0 24 3 2 #"))"
+0 0 24 29 1 #"\n"
+0 0 24 29 1 #"\n"
+0 0 24 3 9 #"         "
+0 0 24 29 1 #"\n"
+0           0

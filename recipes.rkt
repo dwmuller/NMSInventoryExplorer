@@ -12,9 +12,13 @@
          get-recipes-using
          canonicalize-input-form
          get-craftable-item-names
-         craftable-item?)
+         craftable-item?
+         make-recipe
+         add-recipe
+         add-recipe-by-names)
 
 (struct recipe$ (action output count net-count inputs) #:transparent)
+
 (define (make-recipe action output-name count inputs)
   (define output-item (get-item output-name))
   (define output-as-input (assoc output-item inputs))
@@ -25,7 +29,7 @@
            output-item
            count
            net-produced
-           inputs))
+           (sort inputs symbol=? #:key (λ (i) (item$-name (car i))))))
 
 (define all-recipes '())
 (define recipes-by-output (make-hasheq))
@@ -68,7 +72,7 @@
 (define (permute-input-list input-specs)
   (apply permute-lists (map input->alternatives-list input-specs)))
 
-;; Parse and canonicalize a recipe definition, returning a recipe$ struct instance.
+;; Parse and canonicalize a recipe definition, returning a list of recipe$ struct instances.
 (define (parse-recipe target recipe)
   (match recipe
     [(list 'build output-count inputs ...)
@@ -82,18 +86,35 @@
     [(list 'refine  inputs ...)
      (map (λ (inputs) (make-recipe 'refine target 1 inputs)) (permute-input-list inputs))]))
 
+(define (similar-recipes r1 r2)
+  ; Don't look at count or crafting type.
+  (and (eq? (recipe$-output r1) (recipe$-output r2))
+       (equal? (recipe$-inputs r1) (recipe$-inputs r2))))
+
+(define (add-recipe r)
+  (define dupe (findf (λ (o) (similar-recipes r o))
+                      (hash-ref recipes-by-output (recipe$-output r) null)))
+  (cond
+    [dupe
+     (printf "Duplicate recipes: ~a~n                 : ~a~n" dupe r)]
+    [else
+     (hash-update! recipes-by-output (recipe$-output r) (λ (v) (cons r v))  null)
+     (for ((i (map car (recipe$-inputs r))))
+       (hash-update! recipes-by-input i (λ (v) (cons r v)) '()))
+     (set! all-recipes (cons r all-recipes))]))
+
+(define (add-recipe-by-names r)
+  (define inputs
+    (for/list ([i (cdr r)])
+      (cons (get-item (car i) #f) (cdr i))))
+  (when (andmap identity inputs)
+    (add-recipe (make-recipe 'build (car r) 1 inputs))))
+
 ;; Parse and record a resource and its recipes.
 (define (def-recipes name . recipe-defs)
   (define recipes (append-map (λ (recipe) (parse-recipe name recipe)) recipe-defs))
-  (define output (get-item name))
-  (when (hash-has-key? recipes-by-output output)
-    (raise-argument-error 'def-recipes "(not (hash-has-key? (get-item name)))" name))
-  (set! all-recipes (append recipes all-recipes))
-  (when (not (null? recipes))
-    (hash-set! recipes-by-output output recipes))
-  (for ((r recipes))
-    (for ((i (map car (recipe$-inputs r))))
-      (hash-update! recipes-by-input i (λ (cur) (list* r cur)) '()))))
+  (for ([r recipes])
+    (add-recipe r)))
 
 ;;
 ;; Known recipes.
