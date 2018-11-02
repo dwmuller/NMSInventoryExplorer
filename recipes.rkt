@@ -25,11 +25,15 @@
   (define net-produced (if output-as-input
                            (- count (cdr output-as-input))
                            count))
+  (when (null? inputs)
+    (raise-argument-error 'make-recipe
+                          "(not (null? inputs))"
+                          (list output-name inputs)))
   (recipe$ action
            output-item
            count
            net-produced
-           (sort inputs symbol=? #:key (λ (i) (item$-name (car i))))))
+           (sort inputs symbol<? #:key (λ (i) (item$-name (car i))))))
 
 (define all-recipes '())
 (define recipes-by-output (make-hasheq))
@@ -48,7 +52,13 @@
 
 (define (craftable-item? item)
   (hash-has-key? recipes-by-output item))
-  
+
+(define (recipe-short-form r)
+  (list* (recipe$-action r)
+         (item$-name (recipe$-output r))
+         (recipe$-count r)
+         (for/list ([i (recipe$-inputs r)]) (cons (item$-name (car i)) (cdr i)))))
+
 ;;; Helper methods for defining recipes.
 
 ;; Input definitions can simply name an item, with an implicit quantity of "one", or they can be
@@ -87,28 +97,29 @@
      (map (λ (inputs) (make-recipe 'refine target 1 inputs)) (permute-input-list inputs))]))
 
 (define (similar-recipes r1 r2)
-  ; Don't look at count or crafting type.
+  ; Don't look at count.
   (and (eq? (recipe$-output r1) (recipe$-output r2))
-       (equal? (recipe$-inputs r1) (recipe$-inputs r2))))
+       (or (and (eq? 'build (recipe$-action r1)) (eq? 'build (recipe$-action r2)))
+           (equal? (recipe$-inputs r1) (recipe$-inputs r2)))))
 
 (define (add-recipe r)
   (define dupe (findf (λ (o) (similar-recipes r o))
                       (hash-ref recipes-by-output (recipe$-output r) null)))
   (cond
     [dupe
-     (printf "Duplicate recipes: ~a~n                 : ~a~n" dupe r)]
+     (printf "Duplicate recipes: ~a~n                 : ~a~n" (recipe-short-form dupe) (recipe-short-form r))]
     [else
      (hash-update! recipes-by-output (recipe$-output r) (λ (v) (cons r v))  null)
      (for ((i (map car (recipe$-inputs r))))
        (hash-update! recipes-by-input i (λ (v) (cons r v)) '()))
      (set! all-recipes (cons r all-recipes))]))
 
-(define (add-recipe-by-names r)
-  (define inputs
-    (for/list ([i (cdr r)])
+(define (add-recipe-by-names action target count inputs)
+  (define translated-inputs
+    (for/list ([i inputs])
       (cons (get-item (car i) #f) (cdr i))))
-  (when (andmap identity inputs)
-    (add-recipe (make-recipe 'build (car r) 1 inputs))))
+  (when (andmap car translated-inputs)
+    (add-recipe (make-recipe action target count translated-inputs))))
 
 ;; Parse and record a resource and its recipes.
 (define (def-recipes name . recipe-defs)
@@ -139,31 +150,15 @@
 ;;
 ;; TODO: Recipe lists are incomplete.
 
-(define raw-recipes
+#;(define raw-recipes
   '(
     ;;
     ;; Resources
     ;;
     ;; All filled in from data on https://nomanssky.gamepedia.com
     ;;
-    (Ammonia
-     (refine Salt (Fungal-Mould 2))
-     (refine Nitrogen Di=hydrogen)
-     (refine (or Ferrite-Dust Pure-Ferrite) (Paraffinium 2)))
     (Cactus-Flesh
-     (refine 2 Cactus-Flesh Pyrite)
-     (refine (Pyrite 2) (or Oxygen Sulphurine)))
-    (Cadmium
-     (refine 4 Cadmium Chromatic-Metal))
-    (Carbon
-     (refine 2 (or Cactus-Flesh Condensed-Carbon Frost-Crystal Gamma-Root Fungal-Mould Solanium Star-Bulb))
-     (refine Oxygen))
-    (Chlorine
-     (refine (Salt 2))
-     (refine 5(Salt 2) (Oxygen 2))
-     (refine 150 Chloride-Lattice)
-     (refine 6 Chlorine (Oxygen 2))
-     (refine 2 Kelp-Sac (or Oxygen Pugneum Salt Chlorine)))
+     (refine (Pyrite 2) Sulphurine))
     (Chromatic-Metal
      (refine 1 (Copper 2))
      (refine 1 Cadmium)
@@ -347,7 +342,6 @@
     (Sulphurine
      (refine (Nitrogen 3))
      (refine Nitrogen (or Oxygen Chromatic-Metal)))
-    (Tritium)
     (Uranium
      (refine Phosphorus (or Ferrite-Dust Pure-Ferrite))
      (refine (Gamma-Root 2) Salt)
@@ -359,204 +353,56 @@
     ;;
     ;; Other items
     ;;
-    (Acid
-     (build (Mordite 25) (Fungal-Mould 600)))
-    (Advanced-Ion-Battery
-     (build (Ionised-Cobalt 25) (Pure-Ferrite 20)))
-    (Antimatter
-     (build (Chromatic-Metal 25) (Condensed-Carbon 20)))
-    (Antimatter-Housing
-     (build (Oxygen 30) (Ferrite-Dust 50)))
-    (Aronium
-     (build (Paraffinium 50) (Ionised-Cobalt 50))
-     (refine (Paraffinium 30)
-             (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
-             (or (Cobalt 60) (Ionised-Cobalt 30))))
-    (AtlasPass-v1
-     (build (Copper 200) Microprocessor))
-    (AtlasPass-v2
-     (build (Cadmium 200) Microprocessor))
-    (AtlasPass-v3
-     (build (Emeril 200) Microprocessor))
-    (Atmosphere-Harvester
-     (build (Ammonia 100) (Metal-Plating 2) (Hermetic-Seal 2)))
-    (Base-Computer
-     (build (Chromatic-Metal 40)))
-    (Beacon
-     (build Metal-Plating (Ion-Battery 2) Microprocessor))
-    (Carbon-Crystal
-     (build (Condensed-Carbon 150))
-     (refine (Carbon 50) (Condensed-Carbon 50))
-     (refine (Carbon 40) (Condensed-Carbon 40) (Tritium 50)))
-    (Carbon-Nanotubes
-     (build (Carbon 50)))
-    (Chloride-Lattice
-     (build (Chlorine 150))
-     (refine (Salt 50) (Chlorine 50))
-     (refine (Salt 40) (Chlorine 40) (Tritium 50)))
-    (Circuit-Board
-     (build Heat-Capacitor Poly-Fibre))
-    (Cobalt-Mirror
-     (build (Ionised-Cobalt 50)))
-    (Cryo=Pump
-     (build Hot-Ice Thermic-Condensate))
-    (Cryogenic-Chamber
-     (build Living-Glass Cryo=Pump))
-    (Deflector-Shield
-     (build (Chromatic-Metal 100) (Sodium-Nitrate 25)))
     (Destablised-Sodium) ;TODO
-    (Di=hydrogen-Jelly
-     (build (Di=hydrogen 40)))
     (Dirty-Bronze
-     (build (Pyrite 50) (Pure-Ferrite 100))
      (refine (Pyrite 30)
              (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
              (or (Ferrite-Dust 120) (Pure-Ferrite 60))))
-    (Efficient-Thrusters
-     (build Di=hydrogen-Jelly (Tritium 100) (Technology-Module 2)))
-    (Enriched-Carbon
+     (Enriched-Carbon
      (refine
       (Radon 100)
       (or (Carbon 20) (Condensed-Carbon 10))
       (or (Salt 10) (Chlorine 5))))
-    (Explosive-Drones
-     (build Walker-Brain (Gold 50)))
-    (|Frigate-Fuel-(50-Tonnes)|
-     (build (Di=hydrogen 50) (Tritium 50)))
-    (|Frigate-Fuel-(100-Tonnes)|
-     (build (Di=hydrogen 100) (Tritium 100)))
-    (|Frigate-Fuel-(200-Tonnes)|
-     (build (Di=hydrogen 200) (Tritium 200)))
-    (Fuel-Oxidiser
-     (build (Quad-Servo 2) (Gold 50)))
-    (Fusion-Accelerant
-     (build Organic-Catalyst Nitrogen-Salt))
-    (Geodesite
-     (build Dirty-Bronze Herox Lemmium))
     (Glass
-     (build (Frost-Crystal 50))
      (refine (Silver 100)))
     (Grantine
-     (build (Dioxite 50) (Ionised-Cobalt 50))
      (refine (Dioxite 30)
              (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
              (or (Cobalt 60) (Ionised-Cobalt 30))))
-    (Heat-Capacitor
-     (build (Frost-Crystal 100) (Solanium 200)))
-    (Hermetic-Seal
-     (build (Carbon 30)))
     (Herox
-     (build (Ammonia 50) (Ionised-Cobalt 50))
      (refine (Ammonia 30)
              (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
              (or (Cobalt 60) (Ionised-Cobalt 30))))
-    (Holographic-Analyser
-     (build Oxygen-Filter (Gold 50)))
-    (Hot-Ice
-     (build Nitrogen-Salt Enriched-Carbon))
-    (Hyperdrive
-     (build (Chromatic-Metal 125) (Microprocessor 5)))
-    (Ion-Battery
-     (build (Cobalt 25) (Ferrite-Dust 20)))
-    (Iridesite
-     (build Aronium Magno=Gold Grantine))
-    (Jetpack
-     (build (Ferrite-Dust 100)))
-    (Launch-Thruster
-     (build (Pure-Ferrite 100) Di=hydrogen-Jelly))
     (Lemmium
-     (build (Uranium 50) (Pure-Ferrite 100))
      (refine (Uranium 30)
              (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
              (or (Ferrite-Dust 120) (Pure-Ferrite 60))))
-    (Life-Support
-     (build (Ferrite-Dust 100)))
-    (Life-Support-Gel
-     (build Di=hydrogen-Jelly (Carbon 20)))
-    (Liquid-Explosive
-     (build Acid Unstable-Gel))
-    (Living-Glass
-     (build Lubricant (Glass 5)))
-    (Lubricant
-     (build (Coprite 50) (Gamma-Root 400)))
     (Magno=Gold
-     (build (Phosphorus 50) (Ionised-Cobalt 50))
      (refine (Phosphorus 30)
              (or (Tritium 20) (Silver 20) (Gold 10) (Platinum 5))
              (or (Cobalt 60) (Ionised-Cobalt 30))))
-    (Metal-Plating
-     (build (Ferrite-Dust 50)))
-    (Microprocessor
-     (build (Chromatic-Metal 40) Carbon-Nanotubes))
-    (Mind-Control-Device
-     (build Sodium-Diode (Gold 50)))
-    (Mineral-Compressor
-     (build Cobalt-Mirror (Gold 50)))
     (Nitrogen-Salt
-     (build (Nitrogen 250) (Condensed-Carbon 50))
      (refine
       (Nitrogen 100)
       (or (Carbon 20) (Condensed-Carbon 10))
       (or (Salt 10) (Chlorine 5))))
-    (Organic-Catalyst
-     (build Thermic-Condensate Enriched-Carbon))
-    (Oxygen-Capsule
-     (build (Oxygen 25) (Ferrite-Dust 20)))
-    (Oxygen-Filter
-     (build (Oxygen 90) (Pure-Ferrite 30)))
-    (Photon-Cannon
-     (build (Pure-Ferrite 100) (Sodium-Nitrate 60)))
-    (Poly-Fibre
-     (build (Cactus-Flesh 100) (Star-Bulb 200)))
-    (Portable-Refiner
-     (build Metal-Plating (Oxygen 30)))
-    (Projectile-Ammunition
-     (build 500 (Ferrite-Dust 60)))
-    (Pulse-Engine
-     (build Hermetic-Seal Metal-Plating))
-    (Quantum-Processor
-     (build Circuit-Board Superconductor))
     (Rare-Metal-Element
-     (build (Pure-Ferrite 150))
      (refine (Magnetised-Ferrite 35) (Pure-Ferrite 35) (Ferrite-Dust 35))
      (refine (Magnetised-Ferrite 25) (Oxygen 50))
      (refine (Magnetised-Ferrite 20) (Oxygen 20) (Tritium 25)))
-    (Salt-Refractor
-     (build (Chlorine 50)))
-    (Semiconductor
-     (build Thermic-Condensate Nitrogen-Salt))
-    (Signal-Booster
-     (build Metal-Plating Carbon-Nanotubes (Sodium 15)))
-    (Sodium-Diode
-     (build (Sodium-Nitrate 40) (Ferrite-Dust 40)))
-    (Starship-Launch-Fuel
-     (build (Di=hydrogen 40) Metal-Plating))
-    (Stasis-Device
-     (build Quantum-Processor Cryogenic-Chamber Iridesite))
-    (Superconductor
-     (build Semiconductor Enriched-Carbon))
     (Superoxide-Crystal
-     (build (Oxygen 15))
      (refine (Oxygen 100)(Tritium 50))
      (refine (Oxygen 40)(Tritium 50) (Uranium 50)))
     (TetraCobalt
-     (build (Ionised-Cobalt 150))
      (refine (Cobalt 50) (Ionised-Cobalt 50))
      (refine (Cobalt 40) (Ionised-Cobalt 40) (Tritium 50)))
     (Thermic-Condensate
-     (build (Sulphurine 250) (Condensed-Carbon 50))
      (refine
       (Sulphurine 100)
       (or (Carbon 20) (Condensed-Carbon 10))
-      (or (Salt 10) (Chlorine 5))))
-    (Unstable-Gel
-     (build (Cactus-Flesh 200)))
-    (Unstable-Plasma
-     (build (Oxygen 50) Metal-Plating))
-    (Warp-Cell
-     (build Antimatter-Housing Antimatter))))
+      (or (Salt 10) (Chlorine 5))))))
 
-(for ((def raw-recipes))
+#;(for ((def raw-recipes))
   (apply def-recipes def))
 
 
