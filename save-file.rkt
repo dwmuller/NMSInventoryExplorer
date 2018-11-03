@@ -30,7 +30,9 @@
    starships
    ; List of vehicle names. Length varies; current in-game limit is three.
    ; The vehicle indexes in inventory keys corresponds to position in this list.
-   vehicles)
+   vehicles
+   ; Set of item names known by player
+   known-items)
   #:transparent)
 
 ; TODO:
@@ -89,7 +91,11 @@
         (Vn8 . Type)
         (elv . InventoryType)
 
-
+        ; Stuff the player knows, under PlayerStateData
+        (4kj . KnownTech)
+        (eZ< . KnownProducts)
+        (24< . KnownSpecials)
+        
         ; Misc. stuff that I noticed.
         (jk4 . LastKnownPlayerState)
         (rnc . MultiplayerSpawn)
@@ -125,8 +131,6 @@
         (8P3 . DD)
         (\5L6 . UA)
         (bEr . VP)
-        (eZ< . KnownProducts)
-        (4kj . KnownTech)
         
         ))
 
@@ -242,6 +246,13 @@
               result)
         result)))
 
+(define (json->known-items json)
+  (for/fold ([result (seteq)])
+            ([key #[KnownTech KnownProducts KnownSpecials]])
+    (set-union result
+               (for/seteq ([id (get-json-element json 'PlayerStateData key)])
+                 (item$-name (get-item-by-save-id id))))))
+    
 (define (inventory-key? k)
   (match k
     [(cons 'exosuit (or 0 1)) #t]
@@ -274,7 +285,8 @@
              modify-seconds
              (get-keyed-inventories json)
              (json->ships json)
-             (json->vehicles json)))
+             (json->vehicles json)
+             (json->known-items json)))
 
 (define (get-default-data-path)
   (match (system-type)

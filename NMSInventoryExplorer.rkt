@@ -139,6 +139,7 @@
   (update-inventory-check-boxes! ship-check-boxes (available-keys-for 'ship))
   (update-inventory-check-boxes! vehicle-check-boxes (available-keys-for 'vehicle))
   (update-inventory-check-boxes! chest-check-boxes (available-keys-for 'chest))
+  (set-recipe-finder-output-items)
   (queue-callback inventory-selection-changed))
 
 (define (visit-inventory-data visitor)
@@ -212,8 +213,30 @@
          [label (string-append " <== " (string-join inputs ", "))])
     ))
 
+(define (get-recipe-finder-output-item)
+  (label->item (send recipe-finder-output-item get-string (send recipe-finder-output-item get-selection))))
+
+(define (set-recipe-finder-output-items)
+  (define old-combo recipe-finder-output-item)
+  (set! recipe-finder-output-item
+        (new choice%
+       [parent recipe-finder-output-selection-area]
+       [label "Item"]
+       [style '(deleted)]
+       [choices (map item-name->label
+                     (sort (filter (λ (n) (set-member? (game-data-known-items current) n))
+                                   (get-craftable-item-names))
+                           symbol<?))]))
+  (send recipe-finder-output-selection-area
+        change-children
+        (λ (children)
+          (for/list ([child children])
+            (if (eq? child old-combo)
+                recipe-finder-output-item
+                child)))))
+
 (define (find-recipes)
-  (define target-item (label->item (send recipe-finder-output-item get-string (send recipe-finder-output-item get-selection))))
+  (define target-item (get-recipe-finder-output-item))
   (define target-count (string->number (send recipe-finder-output-quantity get-value)))
   (cond
     [(or (not target-count)
