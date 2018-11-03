@@ -246,12 +246,6 @@
 ; me think that the U3REALITY and TRADINGCOST files are for backwards compatibility only. 
 ; Much investigation needed to figure out the right set.
 
-; Strangely, loading build recipes from the items files did not cause conflicts with any of the build recipes I had hand-entered
-; in recipes.rkt, which mostly came from the Wiki. Makes me wonder - need to test in-game. Are one of these two sources wrong? Am I missing a source?
-
-; File METADATA\REALITY\DEFAULTREALITY.EXML looks to have refiner recipes in it! Ooh, this actually looks like the right starting point
-; for a lot of stuff!
-
 ; Read items first, put placeholder for name text. Then translate placeholders.(define build-recipes null)
 
 (define (read-default-reality root)
@@ -266,35 +260,65 @@
     (raise-argument-error 'read-default-reality
                           "Expected <Data template='GcRealityManagerData' ... "
                           (format "<~a template='~a'" (element-name doc) template-type)))
+
+  ; Grab the names of the reality tables, which contain definitions for items.
   (define technology-table (get-filename "TechnologyTable"))
   (define substance-table  (get-filename "SubstanceTable"))
   (define product-table    (get-filename "ProductTable"))
+
+  ; Refiner recipes are stored directly in the default reality doc.
   (define raw-refiner-recipes (read-refiner-recipes doc))
-  (set! doc null) ; Free up memory immediately
+  
+  ; We're done with the top-level doc; free up the memory its XML rep uses.
+  (set! doc null)
+
+  ; Now we load all the item in. Items also often have a primary crafting recipe associated
+  ; with them. The name-id-map is keyed by an identifier for a language-specific name. The
+  ; mapping of these names to items is not unique, so each map entry is a list of data for
+  ; multiple items.
+  ;
+  ; The save-id (often just called the id in this program) identifies items in the save file,
+  ; and *is* a unique but not user-friendly identifier for each item.
   (define name-id-map (make-hash))
   (define save-id-set (mutable-set))
   (load-item-table-doc technology-table "GcTechnologyTable" save-id-set name-id-map)
   (load-item-table-doc substance-table  "GcSubstanceTable"  save-id-set name-id-map)
   (load-item-table-doc product-table    "GcProductTable"    save-id-set name-id-map)
   ;(load-item-table-doc (build-path root (names-value doc "ProceduralProductTable")) "GcProceduralProductTable"  save-id-set name-id-map)
+
+  ; Next, find English translations for each item based on the name-id. In the process
+  ; of doing these, we also turn the item data into actual item$ struct objects. The
+  ; English names are used to generate name-symbols that are used a lot in the program
+  ; to identify items. (This was convenient when items were being defined manually, and is
+  ; still useful when debugging, but is not strictly necessary anymore -- the save-ids would suffice.)
   (define all-item-data (apply append (hash-values name-id-map))) ; Save for later...
   (define id-map (make-hash))
+  ; By default, my game seems to be using U.K. English rather than U.S. English, so let's stick with that.
   (scan-localization-table (build-path root "LANGUAGE/NMS_LOC1_ENGLISH.EXML") "English" name-id-map id-map)
   (scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_ENGLISH.EXML") "English" name-id-map id-map)
   (scan-localization-table (build-path root "LANGUAGE/NMS_UPDATE3_ENGLISH.EXML") "English" name-id-map id-map)
+
+  ; Report some results.
   (printf "Found and translated ~a items.~n" (length (hash-keys id-map)))
   (unless (null? (hash-keys name-id-map))
     (printf "Missing translations for ~a items:~n" (length (hash-keys name-id-map)))
     (for ([(key value) name-id-map])
       (printf "  ~a: ~a~n" key value)))
-  (define (id->name id)
-    (define item (hash-ref id-map id #f))
-    (and item (item$-name item)))
+
+  ; Make up fake  names for the items for which we found no translation. Let's
+  ; hope they don't show up in the UI, but if they do we might have to figure out
+  ; why we didn't find user-friendly names for them.
   (for ([lst (hash-values name-id-map)])
     (for ([i lst])
       (define item-fake-name (string->symbol (first i)))
       (define id (first i))
       (hash-set! id-map id (item$ item-fake-name id (second i) (third i) id))))
+
+  ; The basic and refiner recipes are currently expressed in terms of save-ids. Translate
+  ; these to item names.
+  (define (id->name id)
+    (define item (hash-ref id-map id #f))
+    (and item (item$-name item)))
   (define build-recipes        
     (for/list ([item all-item-data]
                #:when (> (length item) 3))
@@ -316,16 +340,11 @@
          result])))
   (values (hash-values id-map) build-recipes refiner-recipes))
 
-(define-values
-  (items build-recipes refiner-recipes)
+(define-values (items build-recipes refiner-recipes)
   (read-default-reality root))
+
+; Show developer what "flags" we found for items:
 (pretty-print (list 'Flags (sort (remove-duplicates (append-map (λ (v) (item$-flags v)) items)) symbol<?)))
-
-
-; By default, my game seems to be using U.K. English rather than U.S. English, so let's stick with that.
-
-; Attempted additional scans to find missing items; no luck.
-;(scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_ENGLISH.EXML") "English" name-id-map id-map)
 
 (define (write-generated-items)
   (call-with-output-file (build-path output-root "generated-items.rkt") #:mode 'text #:exists 'replace
