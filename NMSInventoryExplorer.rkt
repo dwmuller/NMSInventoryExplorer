@@ -177,15 +177,18 @@
          [parent (new group-box-panel%
                       [parent parent]
                       [label "Steps"])]
-         [style '(auto-vscroll)]))
+         [style '(auto-vscroll)]
+         [alignment '(left top)]))
   (define outputs-column (new vertical-pane%
                               [parent output-area]
-                              [alignment '(left center)]
-                              [stretchable-width #f]))
+                              [alignment '(left top)]
+                              [stretchable-width #f]
+                              [stretchable-height #f]))
   (define inputs-column  (new vertical-pane%
                               [parent output-area]
-                              [alignment '(left center)]
-                              [stretchable-width #f]))
+                              [alignment '(left top)]
+                              [stretchable-width #f]
+                              [stretchable-height #f]))
   (for ([app best])
     (define recipe (car app))
     (define reps (cdr app))
@@ -201,10 +204,6 @@
       (for/fold ([result null])
                 ([i (recipe$-inputs recipe)])
         (cons (format "~a ~a" (* (cdr i) reps) (item->label (car i))) result)))
-    ; The message% object is wrapped in a pane to get centering behavior when
-    ; the Steps area stretches. The left part of the steps already exhibits this behavior,
-    ; so this keeps the two parts aligned. This lets people stretch out the recipe steps
-    ; checklist if they want.
     (new message%
          [parent (new pane%
                       [parent inputs-column]
