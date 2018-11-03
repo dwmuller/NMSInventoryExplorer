@@ -86,6 +86,7 @@
         (XJ> . Y)
         (F9q . MaxAmount)
         (1o9 . Amount)
+        (Vn8 . Type)
         (elv . InventoryType)
 
 
@@ -148,11 +149,13 @@
   ; Filter out installed tech? (Maybe just by -1 amount?)
   (for/fold ([result inventory])
             ([slot slots])
+    (define inventory-type (get-json-element slot 'Type 'InventoryType))
     (define amount (get-json-element slot 'Amount))
     (define id (get-json-element slot 'Id))
     (define item (get-item-by-save-id id))
     (cond
-      [(<= amount 0) result]
+      [(or (<= amount 0) (string=? "Technology" inventory-type))
+       result]
       [(void? item)
        (printf "Unknown item id in ~s: ~s~n" path id)
        result]
@@ -184,7 +187,7 @@
     (define location (get-json-element vehicle 'Location))
     (if (string? location)
         ; Use full path here to help with error messages.
-        (cons (json->inventory json 'PlayerStateData 'ShipOwnership i 'Inventory) result)
+        (cons (json->inventory json 'PlayerStateData 'VehicleOwnership i 'Inventory) result)
         ; A non-string location means, I think, an unused slot.
         result)))
 
