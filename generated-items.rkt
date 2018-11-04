@@ -1,5 +1,5 @@
 #lang racket
-; Generated via parse-items.rkt by danm at 2018-11-01T23:36:23 Eastern Daylight Time
+; Generated via parse-items.rkt by danm at 2018-11-04T14:39:29 Eastern Standard Time
 (require "items.rkt")
 (define generated-items
   '(#s(item$
@@ -125,6 +125,12 @@
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "Appearance Modifier")
     #s(item$
+       Aquatic-Crystal
+       "BASE_WPLANT2"
+       500
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Aquatic Crystal")
+    #s(item$
        Armoured-Boots
        "SPEC_VYK_BOOTS"
        1000
@@ -230,6 +236,12 @@
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "BRIDGECONNECTOR")
+    #s(item$
+       Barnacle
+       "BASE_BARNACLE"
+       500
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Barnacle")
     #s(item$
        Barrel-Fabricator
        "CRATELCYLINDER"
@@ -446,6 +458,12 @@
        1
        (Technology:Ship TechnologyRarity:VeryRare TechShopRarity:Common)
        "Cadmium Drive")
+    #s(item$
+       Candelabra-Bloom
+       "BASE_WPLANT3"
+       500
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Candelabra Bloom")
     #s(item$
        Canister-Rack
        "BUILDCANRACK"
@@ -754,6 +772,12 @@
        (Substance:Special Rarity:Rare Product:Tradeable)
        "Cryogenic Chamber")
     #s(item$
+       Crystal-Sulphide
+       "VENTGEM"
+       7800
+       (Substance:Exotic Rarity:Rare Product:Tradeable)
+       "Crystal Sulphide")
+    #s(item$
        Cube
        "CUBESHAPE"
        1
@@ -819,6 +843,12 @@
        500
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "Curious Corn")
+    #s(item$
+       Curly-Coral
+       "BASE_WPLANT1"
+       500
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Curly Coral")
     #s(item$
        Curved-Corridor
        "CORRIDORC"
@@ -909,6 +939,7 @@
        3
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "Cylindrical Room Frame")
+    #s(item$ Cyto=Phosphate "WATERPLANT" 201 (Rarity:Rare) "Cyto-Phosphate")
     #s(item$
        Damaged-Electrode
        "EXOPOD_TECH2"
@@ -1094,6 +1125,12 @@
        (Substance:Exotic Rarity:Common Product:Tradeable)
        "Decommissioned Circuit Board")
     #s(item$
+       Deepwater-Chamber
+       "MAINROOM_WATER"
+       6
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Deepwater Chamber")
+    #s(item$
        Defence-Chit
        "POLICE_TOKEN"
        10000
@@ -1148,7 +1185,7 @@
        Drift-Suspension
        "VEHICLE_GRIP1"
        1
-       (Technology:Vehicle
+       (Technology:Exocraft
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Drift Suspension")
@@ -1188,6 +1225,12 @@
        1
        (Technology:Ship TechnologyRarity:Normal TechShopRarity:Common)
        "Efficient Thrusters")
+    #s(item$
+       Efficient-Water-Jets
+       "UT_WATERJET"
+       1
+       (Technology:Suit TechnologyRarity:Common TechShopRarity:Common)
+       "Efficient Water Jets")
     #s(item$ Emeril "GREEN2" 348 (Rarity:Rare) "Emeril")
     #s(item$
        Emeril-Drive
@@ -1217,7 +1260,7 @@
        Exocraft-Acceleration-Module
        "VEHICLE_BOOST"
        1
-       (Technology:Vehicle
+       (Technology:Exocraft
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Exocraft Acceleration Module")
@@ -1321,7 +1364,7 @@
        Exocraft-Mining-Laser
        "VEHICLE_LASER"
        1
-       (Technology:Vehicle
+       (Technology:Exocraft
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Exocraft Mining Laser")
@@ -1329,7 +1372,7 @@
        Exocraft-Mining-Laser-Upgrade-Sigma
        "VEHICLE_LASER1"
        1
-       (Technology:Vehicle
+       (Technology:Exocraft
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Exocraft Mining Laser Upgrade Sigma")
@@ -1337,7 +1380,7 @@
        Exocraft-Mounted-Cannon
        "VEHICLE_GUN"
        1
-       (Technology:Vehicle
+       (Technology:Exocraft
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Exocraft Mounted Cannon")
@@ -1345,7 +1388,7 @@
        Exocraft-Signal-Booster
        "VEHICLE_SCAN"
        1
-       (Technology:Vehicle
+       (Technology:Exocraft
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Exocraft Signal Booster")
@@ -1353,7 +1396,7 @@
        Exocraft-Signal-Booster-Upgrade-Sigma
        "VEHICLE_SCAN1"
        1
-       (Technology:Vehicle
+       (Technology:Exocraft
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Exocraft Signal Booster Upgrade Sigma")
@@ -1361,7 +1404,7 @@
        Exocraft-Signal-Booster-Upgrade-Tau
        "VEHICLE_SCAN2"
        1
-       (Technology:Vehicle
+       (Technology:Exocraft
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Exocraft Signal Booster Upgrade Tau")
@@ -1395,24 +1438,6 @@
        75000
        (Substance:Special Rarity:Rare Product:Consumable)
        "Explosive Drones")
-    #s(item$
-       F_HACCESS1
-       "F_HACCESS1"
-       1
-       (Technology:Freighter TechnologyRarity:Impossible TechShopRarity:Normal)
-       "F_HACCESS1")
-    #s(item$
-       F_HACCESS2
-       "F_HACCESS2"
-       1
-       (Technology:Freighter TechnologyRarity:Impossible TechShopRarity:Rare)
-       "F_HACCESS2")
-    #s(item$
-       F_HACCESS3
-       "F_HACCESS3"
-       1
-       (Technology:Freighter TechnologyRarity:Impossible TechShopRarity:Rare)
-       "F_HACCESS3")
     #s(item$
        Faulty-Hologram
        "EXOPOD_TECH1"
@@ -1702,7 +1727,7 @@
        Fusion-Engine
        "VEHICLE_ENGINE"
        1
-       (Technology:Vehicle TechnologyRarity:Always TechShopRarity:Impossible)
+       (Technology:Exocraft TechnologyRarity:Always TechShopRarity:Impossible)
        "Fusion Engine")
     #s(item$
        Fusion-Ignitor
@@ -1803,6 +1828,12 @@
        5
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "Glass Roofed Corridor")
+    #s(item$
+       Glass-Tunnel
+       "CORRIDOR_WATER"
+       3
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Glass Tunnel")
     #s(item$ Gold "ASTEROID2" 202 (Rarity:Uncommon) "Gold")
     #s(item$
        Gold-Astronaut-Statue
@@ -1874,7 +1905,7 @@
        Grip-Boost-Suspension
        "VEHICLE_GRIP2"
        1
-       (Technology:Vehicle
+       (Technology:Exocraft
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Grip Boost Suspension")
@@ -1890,6 +1921,12 @@
        1500
        (Substance:Exotic Rarity:Common Product:Emote)
        "Ha!")
+    #s(item$
+       Hadal-Core
+       "FISHCORE"
+       97500
+       (Substance:Exotic Rarity:Rare Product:Tradeable)
+       "Hadal Core")
     #s(item$
        Hand-of-Approval-Decal
        "SPEC_DECAL03"
@@ -1955,10 +1992,18 @@
        Hi=Slide-Suspension
        "VEHICLE_GRIP3"
        1
-       (Technology:Vehicle
+       (Technology:Exocraft
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Hi-Slide Suspension")
+    #s(item$
+       High=Power-Sonar
+       "SUB_BINOCS"
+       1
+       (Technology:Submarine
+        TechnologyRarity:Impossible
+        TechShopRarity:Impossible)
+       "High-Power Sonar")
     #s(item$
        Holo=Door
        "DOOR2"
@@ -1990,11 +2035,47 @@
        (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Hull Fracture")
     #s(item$
+       Humboldt-Drive
+       "SUB_ENGINE"
+       1
+       (Technology:Submarine TechnologyRarity:Always TechShopRarity:Impossible)
+       "Humboldt Drive")
+    #s(item$
+       |Humboldt-Drive-Module-(A)|
+       "U_EXO_SUB3"
+       240
+       (Substance:Special Rarity:Rare Product:Consumable)
+       "Humboldt Drive Module (A)")
+    #s(item$
+       |Humboldt-Drive-Module-(B)|
+       "U_EXO_SUB2"
+       140
+       (Substance:Special Rarity:Rare Product:Consumable)
+       "Humboldt Drive Module (B)")
+    #s(item$
+       |Humboldt-Drive-Module-(C)|
+       "U_EXO_SUB1"
+       60
+       (Substance:Special Rarity:Rare Product:Consumable)
+       "Humboldt Drive Module (C)")
+    #s(item$
+       |Humboldt-Drive-Module-(S)|
+       "U_EXO_SUB4"
+       360
+       (Substance:Special Rarity:Rare Product:Consumable)
+       "Humboldt Drive Module (S)")
+    #s(item$
        Hydroponic-Tray
        "PLANTER"
        3
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "Hydroponic Tray")
+    #s(item$
+       Hydrothermal-Fuel-Cell
+       "SUBFUEL"
+       7200
+       (Substance:Fuel Rarity:Uncommon Product:Consumable)
+       "Hydrothermal Fuel Cell")
     #s(item$
        Hyperdrive
        "HYPERDRIVE"
@@ -2025,6 +2106,12 @@
        360
        (Substance:Special Rarity:Rare Product:Consumable)
        "Hyperdrive Module (S)")
+    #s(item$
+       Hypnotic-Eye
+       "EYEBALL"
+       60000
+       (Substance:Exotic Rarity:Rare Product:Tradeable)
+       "Hypnotic Eye")
     #s(item$ Indium "BLUE2" 464 (Rarity:Rare) "Indium")
     #s(item$
        Indium-Drive
@@ -2153,6 +2240,12 @@
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "L-Shaped Corridor")
     #s(item$
+       L=Shaped-Glass-Tunnel
+       "CORRIDORL_WATER"
+       3
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "L-Shaped Glass Tunnel")
+    #s(item$
        Lab-Lamp
        "BUILDLABLAMP"
        1
@@ -2188,6 +2281,12 @@
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "Large Freighter Room [2]")
+    #s(item$
+       Large-Glass-Panel
+       "PANEL_GLASS"
+       1
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Large Glass Panel")
     #s(item$
        Large-Hydroponic-Tray
        "PLANTERMEGA"
@@ -2328,6 +2427,12 @@
        566000
        (Substance:Special Rarity:Rare Product:Tradeable)
        "Living Glass")
+    #s(item$
+       Living-Pearl
+       "CLAMPEARL"
+       5050
+       (Substance:Exotic Rarity:Rare Product:Tradeable)
+       "Living Pearl")
     #s(item$ Living-Slime "SPACEGUNK4" 20 (Rarity:Uncommon) "Living Slime")
     #s(item$
        Load-Balancer
@@ -2366,6 +2471,12 @@
         TechShopRarity:Impossible)
        "Loom Damage")
     #s(item$
+       Lost-Bathysphere
+       "SPEC_DIVEHELMET"
+       1000
+       (Substance:Exotic Rarity:Common Product:Consumable)
+       "Lost Bathysphere")
+    #s(item$
        Lubricant
        "FARMPROD2"
        110000
@@ -2391,6 +2502,12 @@
        25000
        (Substance:Stellar Rarity:Rare Product:Tradeable)
        "Magno-Gold")
+    #s(item$
+       Marine-Shelter
+       "WATERBUBBLE"
+       10
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Marine Shelter")
     #s(item$ Marrow-Bulb "PLANT_CAVE" 41 (Rarity:Uncommon) "Marrow Bulb")
     #s(item$
        Mass-Accelerator
@@ -2596,6 +2713,12 @@
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "Monitor Station")
+    #s(item$
+       Moon-Pool-Floor
+       "MOONPOOL"
+       10
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Moon Pool Floor")
     #s(item$ Mordite "CREATURE1" 40 (Rarity:Common) "Mordite")
     #s(item$
        Mordite-Root
@@ -2653,6 +2776,44 @@
        (Substance:Exotic Rarity:Common Product:Tradeable)
        "Nanotube Crate")
     #s(item$
+       Nautilon-Cannon
+       "SUB_GUN"
+       1
+       (Technology:Submarine
+        TechnologyRarity:Impossible
+        TechShopRarity:Impossible)
+       "Nautilon Cannon")
+    #s(item$
+       |Nautilon-Cannon-Module-(A)|
+       "U_EXO_SUBGUN3"
+       240
+       (Substance:Special Rarity:Rare Product:Consumable)
+       "Nautilon Cannon Module (A)")
+    #s(item$
+       |Nautilon-Cannon-Module-(B)|
+       "U_EXO_SUBGUN2"
+       140
+       (Substance:Special Rarity:Rare Product:Consumable)
+       "Nautilon Cannon Module (B)")
+    #s(item$
+       |Nautilon-Cannon-Module-(C)|
+       "U_EXO_SUBGUN1"
+       60
+       (Substance:Special Rarity:Rare Product:Consumable)
+       "Nautilon Cannon Module (C)")
+    #s(item$
+       |Nautilon-Cannon-Module-(S)|
+       "U_EXO_SUBGUN4"
+       360
+       (Substance:Special Rarity:Rare Product:Consumable)
+       "Nautilon Cannon Module (S)")
+    #s(item$
+       Nautilon-Chamber
+       "GARAGE_SUB"
+       10
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Nautilon Chamber")
+    #s(item$
        Navigation-Data
        "NAV_DATA"
        1000
@@ -2703,6 +2864,12 @@
        50000
        (Substance:Special Rarity:Rare Product:Tradeable)
        "Nitrogen Salt")
+    #s(item$
+       No-Problem
+       "SPEC_EMOTE05"
+       1500
+       (Substance:Exotic Rarity:Common Product:Emote)
+       "No Problem")
     #s(item$
        Nomad-Geobay
        "GARAGE_S"
@@ -2796,6 +2963,14 @@
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "Oscilloscope")
     #s(item$
+       Osmotic-Generator
+       "SUB_RECHARGE"
+       1
+       (Technology:Submarine
+        TechnologyRarity:Impossible
+        TechShopRarity:Impossible)
+       "Osmotic Generator")
+    #s(item$
        Output-screen
        "MAINT_TECH9"
        1
@@ -2828,6 +3003,12 @@
        1
        (Technology:Suit TechnologyRarity:Common TechShopRarity:Common)
        "Oxygen Recycler")
+    #s(item$
+       Oxygen-Rerouter
+       "UT_WATERENERGY"
+       1
+       (Technology:Suit TechnologyRarity:Common TechShopRarity:Common)
+       "Oxygen Rerouter")
     #s(item$ Paraffinium "LUSH1" 62 (Rarity:Uncommon) "Paraffinium")
     #s(item$
        Paving
@@ -2847,6 +3028,14 @@
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "Paving [2]")
+    #s(item$
+       Pearl-Offering
+       "MAINT_SEALOCK1"
+       1
+       (Technology:Maintenance
+        TechnologyRarity:Impossible
+        TechShopRarity:Impossible)
+       "Pearl Offering")
     #s(item$
        Personal-Forcefield
        "GROUND_SHIELD"
@@ -3751,6 +3940,12 @@
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "Sloping Wood Panel")
     #s(item$
+       Small-Aquarium
+       "BASE_AQUARIUM"
+       800
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Small Aquarium")
+    #s(item$
        Small-Concrete-Door
        "C_SDOOR"
        2
@@ -3899,6 +4094,12 @@
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Spring Casing")
+    #s(item$
+       Square-Deepwater-Chamber
+       "MAINROOMCUBE_W"
+       6
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Square Deepwater Chamber")
     #s(item$
        Square-Room
        "MAINROOMCUBEF"
@@ -4096,6 +4297,12 @@
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "T-Shaped Corridor")
     #s(item$
+       T=Shaped-Glass-Tunnel
+       "CORRIDORT_WATER"
+       3
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "T-Shaped Glass Tunnel")
+    #s(item$
        TRA_COMMODITY1
        "TRA_COMMODITY1"
        1000
@@ -4211,6 +4418,14 @@
        1
        (Technology:Weapon TechnologyRarity:Common TechShopRarity:Common)
        "Terrain Manipulator")
+    #s(item$
+       Tethys-Beam
+       "SUB_LASER"
+       1
+       (Technology:Submarine
+        TechnologyRarity:Impossible
+        TechShopRarity:Impossible)
+       "Tethys Beam")
     #s(item$
        TetraCobalt
        "CAVEPROD3"
@@ -4349,6 +4564,20 @@
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Transmission Box [1]")
+    #s(item$
+       Trident-Key
+       "TRIDENT_KEY"
+       1000
+       (Substance:Special Rarity:Rare Product:Curiousity)
+       "Trident Key")
+    #s(item$
+       Trident-Key
+       "MAINT_SEALOCK2"
+       1
+       (Technology:Maintenance
+        TechnologyRarity:Impossible
+        TechShopRarity:Impossible)
+       "Trident Key")
     #s(item$ Tritium "ROCKETSUB" 6 (Rarity:Common) "Tritium")
     #s(item$
        |Underwater-Protection-Module-(A)|
@@ -4388,43 +4617,39 @@
        "Unstable Plasma")
     #s(item$
        Upgrade-Module
-       "T_EXENG"
+       "T_SUBGUN"
        1
-       (Technology:Vehicle
+       (Technology:Submarine
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Upgrade Module")
     #s(item$
        |Upgrade-Module-[10]|
-       "T_JET"
+       "T_UNW"
        1
        (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [10]")
     #s(item$
        |Upgrade-Module-[11]|
-       "T_ENERGY"
+       "T_SHIELD"
        1
        (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [11]")
     #s(item$
        |Upgrade-Module-[12]|
-       "T_SMG"
+       "T_JET"
        1
-       (Technology:Weapon
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
+       (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [12]")
     #s(item$
        |Upgrade-Module-[13]|
-       "T_SHOTGUN"
+       "T_ENERGY"
        1
-       (Technology:Weapon
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
+       (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [13]")
     #s(item$
        |Upgrade-Module-[14]|
-       "T_RAIL"
+       "T_SMG"
        1
        (Technology:Weapon
         TechnologyRarity:Impossible
@@ -4432,7 +4657,7 @@
        "Upgrade Module [14]")
     #s(item$
        |Upgrade-Module-[15]|
-       "T_T_GREN"
+       "T_SHOTGUN"
        1
        (Technology:Weapon
         TechnologyRarity:Impossible
@@ -4440,7 +4665,7 @@
        "Upgrade Module [15]")
     #s(item$
        |Upgrade-Module-[16]|
-       "T_GRENADE"
+       "T_RAIL"
        1
        (Technology:Weapon
         TechnologyRarity:Impossible
@@ -4448,7 +4673,7 @@
        "Upgrade Module [16]")
     #s(item$
        |Upgrade-Module-[17]|
-       "T_BOLT"
+       "T_T_GREN"
        1
        (Technology:Weapon
         TechnologyRarity:Impossible
@@ -4456,7 +4681,7 @@
        "Upgrade Module [17]")
     #s(item$
        |Upgrade-Module-[18]|
-       "T_LASER"
+       "T_GRENADE"
        1
        (Technology:Weapon
         TechnologyRarity:Impossible
@@ -4464,7 +4689,7 @@
        "Upgrade Module [18]")
     #s(item$
        |Upgrade-Module-[19]|
-       "T_SCAN"
+       "T_BOLT"
        1
        (Technology:Weapon
         TechnologyRarity:Impossible
@@ -4472,109 +4697,129 @@
        "Upgrade Module [19]")
     #s(item$
        |Upgrade-Module-[1]|
-       "T_BOOST"
+       "T_SUB"
        1
-       (Technology:Vehicle
+       (Technology:Submarine
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Upgrade Module [1]")
     #s(item$
        |Upgrade-Module-[20]|
-       "T_SHIPBLOB"
+       "T_LASER"
        1
-       (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
+       (Technology:Weapon
+        TechnologyRarity:Impossible
+        TechShopRarity:Impossible)
        "Upgrade Module [20]")
     #s(item$
        |Upgrade-Module-[21]|
-       "T_SHIPMINI"
+       "T_SCAN"
        1
-       (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
+       (Technology:Weapon
+        TechnologyRarity:Impossible
+        TechShopRarity:Impossible)
        "Upgrade Module [21]")
     #s(item$
        |Upgrade-Module-[22]|
-       "T_SHIPSHOT"
+       "T_SHIPBLOB"
        1
        (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [22]")
     #s(item$
        |Upgrade-Module-[23]|
-       "T_SHIPLAS"
+       "T_SHIPMINI"
        1
        (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [23]")
     #s(item$
        |Upgrade-Module-[24]|
-       "T_SHIPGUN"
+       "T_SHIPSHOT"
        1
        (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [24]")
     #s(item$
        |Upgrade-Module-[25]|
-       "T_SHIPSHLD"
+       "T_SHIPLAS"
        1
        (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [25]")
     #s(item$
        |Upgrade-Module-[26]|
-       "T_HDRIVE"
+       "T_SHIPGUN"
        1
        (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [26]")
     #s(item$
        |Upgrade-Module-[27]|
-       "T_SHIPJUMP"
+       "T_SHIPSHLD"
        1
        (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [27]")
     #s(item$
-       |Upgrade-Module-[2]|
-       "T_EXLAS"
+       |Upgrade-Module-[28]|
+       "T_HDRIVE"
        1
-       (Technology:Vehicle
+       (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
+       "Upgrade Module [28]")
+    #s(item$
+       |Upgrade-Module-[29]|
+       "T_SHIPJUMP"
+       1
+       (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
+       "Upgrade Module [29]")
+    #s(item$
+       |Upgrade-Module-[2]|
+       "T_EXENG"
+       1
+       (Technology:Exocraft
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Upgrade Module [2]")
     #s(item$
        |Upgrade-Module-[3]|
-       "T_EXGUN"
+       "T_BOOST"
        1
-       (Technology:Vehicle
+       (Technology:Exocraft
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Upgrade Module [3]")
     #s(item$
        |Upgrade-Module-[4]|
-       "T_HOTPROT"
+       "T_EXLAS"
        1
-       (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
+       (Technology:Exocraft
+        TechnologyRarity:Impossible
+        TechShopRarity:Impossible)
        "Upgrade Module [4]")
     #s(item$
        |Upgrade-Module-[5]|
-       "T_COLDPROT"
+       "T_EXGUN"
        1
-       (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
+       (Technology:Exocraft
+        TechnologyRarity:Impossible
+        TechShopRarity:Impossible)
        "Upgrade Module [5]")
     #s(item$
        |Upgrade-Module-[6]|
-       "T_TOX"
+       "T_HOTPROT"
        1
        (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [6]")
     #s(item$
        |Upgrade-Module-[7]|
-       "T_RAD"
+       "T_COLDPROT"
        1
        (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [7]")
     #s(item$
        |Upgrade-Module-[8]|
-       "T_UNW"
+       "T_TOX"
        1
        (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [8]")
     #s(item$
        |Upgrade-Module-[9]|
-       "T_SHIELD"
+       "T_RAD"
        1
        (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
        "Upgrade Module [9]")
@@ -4585,6 +4830,12 @@
        3
        (Substance:BuildingPart Rarity:Rare Product:BuildingPart)
        "Venom Urchin")
+    #s(item$
+       Vertical-Glass-Tunnel
+       "CORRIDORV_WATER"
+       3
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Vertical Glass Tunnel")
     #s(item$
        Viewing-Sphere
        "VIEWSPHERE"
@@ -4664,6 +4915,30 @@
        46750
        (Substance:Special Rarity:Rare Product:Consumable)
        "Warp Cell")
+    #s(item$
+       Warp-Shielding-Sigma
+       "F_HACCESS1"
+       1
+       (Technology:Freighter TechnologyRarity:Impossible TechShopRarity:Normal)
+       "Warp Shielding Sigma")
+    #s(item$
+       Warp-Shielding-Tau
+       "F_HACCESS2"
+       1
+       (Technology:Freighter TechnologyRarity:Impossible TechShopRarity:Rare)
+       "Warp Shielding Tau")
+    #s(item$
+       Warp-Shielding-Theta
+       "F_HACCESS3"
+       1
+       (Technology:Freighter TechnologyRarity:Impossible TechShopRarity:Rare)
+       "Warp Shielding Theta")
+    #s(item$
+       Watertight-Door
+       "BUILDDOOR_WATER"
+       2
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "Watertight Door")
     #s(item$
        Waveform-Recycler
        "UT_SCAN"
@@ -4819,5 +5094,11 @@
        "CORRIDORX"
        5
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "X-Shaped Corridor")))
+       "X-Shaped Corridor")
+    #s(item$
+       X=Shaped-Glass-Tunnel
+       "CORRIDORX_WATER"
+       3
+       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
+       "X-Shaped Glass Tunnel")))
 (for ((item generated-items)) (add-item item))

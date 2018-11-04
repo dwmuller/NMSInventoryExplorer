@@ -24,7 +24,7 @@
 ;;; in Racket|Limit Memory. I suggest restarting DrRacket after finishing with it.
 
 
-(define root (simplify-path "D:/NMS-tools/out-1.65/"))
+(define root (simplify-path "D:/NMS-tools/out-1.7/"))
 (define output-root (simplify-path "C:/Users/danm/Documents/Racket/NMSRecipes/"))
 
 ;;;
@@ -336,7 +336,7 @@
         [(and output (andmap car inputs))
           (list* (list* output (second r) inputs) result)]
         [else
-         (printf "Unresolved refiner recipe: ~a~n." r)
+         (printf "Unresolved refiner recipe: ~a.~n" r)
          result])))
   (values (hash-values id-map) build-recipes refiner-recipes))
 
