@@ -46,6 +46,12 @@ chains for you to choose from.
 The checkboxes next to crafting steps do nothing; they're provided just to
 help you keep track while applying a lengthy sequence.
 
+Startup state, showing table of selected inventory contents:
+![startup screenshot with inventory table](./screenshots/inventories.png)
+
+Recipe finder after successfully finding a recipe chain using selected inventory:
+![screenshot with successful recipe list](./screenshots/found-recipe.png)
+
 ## Problems
 
 Hello Games tried to obscure the save file with a release in late 2018
