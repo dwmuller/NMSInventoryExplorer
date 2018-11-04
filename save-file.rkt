@@ -152,7 +152,8 @@
   ; TODO
   ; Filter out installed tech? (Maybe just by -1 amount?)
   (for/fold ([result inventory])
-            ([slot slots])
+            ([slot slots]
+             [index (in-naturals)])
     (define inventory-type (get-json-element slot 'Type 'InventoryType))
     (define amount (get-json-element slot 'Amount))
     (define id (get-json-element slot 'Id))
@@ -161,7 +162,7 @@
       [(or (<= amount 0) (string=? "Technology" inventory-type))
        result]
       [(void? item)
-       (printf "Unknown item id in ~s: ~s~n" path id)
+       (printf "Unknown item id in ~a [~a]: ~a~n" path index id)
        result]
       [else
        (inventory-deposit result item amount)])))
@@ -250,8 +251,15 @@
   (for/fold ([result (seteq)])
             ([key #[KnownTech KnownProducts KnownSpecials]])
     (set-union result
-               (for/seteq ([id (get-json-element json 'PlayerStateData key)])
-                 (item$-name (get-item-by-save-id id))))))
+               (for/fold ([result2 (seteq)])
+                         ([id (get-json-element json 'PlayerStateData key)]
+                          [index (in-naturals)])
+                 (define item (get-item-by-save-id id #f))
+                 (cond
+                   [item (set-add result2 (item$-name item))]
+                   [else
+                    (printf "Unknown item id in ~a [~a]: ~a~n" (list 'PlayerStateData key) index id)
+                    result2])))))
     
 (define (inventory-key? k)
   (match k
