@@ -179,16 +179,24 @@
   (for ([elem (child-element-sequence doc '(Property Property))])
     (when (string=? "TkLocalisationEntry.xml" (get-attribute elem 'value))
       (define name-id (names-value elem "Id"))
-      (for ([data (hash-ref name-id-map name-id null)]
-            [index (in-naturals)])
-        (define label (string-append (names-value elem language "Value")
-                                     (if (zero? index) "" (format " [~a]" index))))
-        (define item-name (label->item-name label))
+      (define translation (names-value elem language "Value"))
+      (define items-data (hash-ref name-id-map name-id null))
+      ; Report on multiple uses of the same translation:
+      (when (> (length items-data) 1)
+        (printf "* ~a (~a) referenced by: (~a)~n"
+            translation name-id (string-join (map car items-data))))
+      ; Items that share a translation seem to be essentially identical,
+      ; differing only in appearance. We'll use the last one (which was the
+      ; first one encountered in a file) and ignore the rest, because the
+      ; appearance differences are immaterial to our application.
+      (unless (null? items-data)
+      (define data (last items-data))
+        (define item-name (label->item-name translation))
         (define id (first data))
         (hash-remove! name-id-map name-id)
         (hash-set! id-map
                    id
-                   (item$ item-name id (second data) (third data) label))))))
+                   (item$ item-name id (second data) (third data) translation))))))
 
 ; Item readers return two values:
 ;   lower-name-id
@@ -225,7 +233,7 @@
       (define-values (name-lower-id data) (item-reader item))
       (cond
         [(set-member? save-id-set (car data))
-         (printf "Duplicate save-id: ~a, entry ~a in ~a ~n" (car data) index path)]
+         (printf "* Duplicate save-id: ~a, entry ~a in ~a ~n" (car data) index path)]
         [else
          (set-add! save-id-set (car data))
          ;(when (hash-has-key? name-id-map name-lower-id) 
@@ -286,12 +294,6 @@
   (load-item-table-doc product-table    "GcProductTable"    save-id-set name-id-map)
   ;(load-item-table-doc (build-path root (names-value doc "ProceduralProductTable")) "GcProceduralProductTable"  save-id-set name-id-map)
 
-  ; Report on ambiguous translation references.
-  (for ([(key items) name-id-map]
-        #:when (> (length items) 1))
-    (printf "~a referenced by: (~a)~n"
-            key (string-join (map car items))))
-
   ; Next, find English translations for each item based on the name-id. In the process
   ; of doing these, we also turn the item data into actual item$ struct objects. The
   ; English names are used to generate name-symbols that are used a lot in the program
@@ -307,9 +309,9 @@
   ; Report some results.
   (printf "Found and translated ~a items.~n" (length (hash-keys id-map)))
   (unless (null? (hash-keys name-id-map))
-    (printf "Missing translations for ~a items:~n" (length (hash-keys name-id-map)))
+    (printf "* Missing translations for ~a items:~n" (length (hash-keys name-id-map)))
     (for ([(key value) name-id-map])
-      (printf "  ~a: ~a~n" key value)))
+      (printf "*   ~a: ~a~n" key value)))
 
   ; Make up fake  names for the items for which we found no translation. Let's
   ; hope they don't show up in the UI, but if they do we might have to figure out
@@ -321,16 +323,22 @@
       (hash-set! id-map id (item$ item-fake-name id (second i) (third i) id))))
 
   ; The basic and refiner recipes are currently expressed in terms of save-ids. Translate
-  ; these to item names.
+  ; these to item names. When that doesn't work (e.g. when synonymous items are dropped),
+  ; ignore them.
   (define (id->name id)
     (define item (hash-ref id-map id #f))
     (and item (item$-name item)))
-  (define build-recipes        
-    (for/list ([item all-item-data]
+  (define build-recipes
+    (for/fold ([result null])
+              ([item all-item-data]
                #:when (> (length item) 3))
-      (list* (id->name (first item))
-             (for/list ([i (list-tail item 3)])
-               (cons (id->name (car i)) (cdr i))))))
+      (define name (id->name (first item)))
+      (if name
+          (cons (list* name
+                       (for/list ([i (list-tail item 3)])
+                         (cons (id->name (car i)) (cdr i))))
+                result)
+          result)))
   (define refiner-recipes
     (for/fold ([result null])
               ([r raw-refiner-recipes])
@@ -342,7 +350,7 @@
         [(and output (andmap car inputs))
           (list* (list* output (second r) inputs) result)]
         [else
-         (printf "Unresolved refiner recipe: ~a.~n" r)
+         (printf "* Unresolved refiner recipe: ~a.~n" r)
          result])))
   (values (hash-values id-map) build-recipes refiner-recipes))
 

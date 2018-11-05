@@ -1,5 +1,5 @@
 #lang racket
-; Generated via parse-items.rkt by danm at 2018-11-04T14:39:29 Eastern Standard Time
+; Generated via parse-items.rkt by danm at 2018-11-04T20:28:47 Eastern Standard Time
 (require "items.rkt")
 (define generated-items
   '(#s(item$
@@ -515,22 +515,10 @@
        "Celebrate!")
     #s(item$
        Chair
-       "BUILDCHAIR3"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Chair")
-    #s(item$
-       |Chair-[1]|
-       "BUILDCHAIR2"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Chair [1]")
-    #s(item$
-       |Chair-[2]|
        "BUILDCHAIR"
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Chair [2]")
+       "Chair")
     #s(item$
        Chloride-Lattice
        "WATERPROD3"
@@ -560,40 +548,10 @@
        "Colossus Geobay")
     #s(item$
        Coloured-Light
-       "WALLLIGHTWHITE"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Coloured Light")
-    #s(item$
-       |Coloured-Light-[1]|
-       "WALLLIGHTRED"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Coloured Light [1]")
-    #s(item$
-       |Coloured-Light-[2]|
-       "WALLLIGHTGREEN"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Coloured Light [2]")
-    #s(item$
-       |Coloured-Light-[3]|
-       "WALLLIGHTYELLOW"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Coloured Light [3]")
-    #s(item$
-       |Coloured-Light-[4]|
-       "WALLLIGHTPINK"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Coloured Light [4]")
-    #s(item$
-       |Coloured-Light-[5]|
        "WALLLIGHTBLUE"
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Coloured Light [5]")
+       "Coloured Light")
     #s(item$
        Combat-Scope
        "SCOPE"
@@ -711,20 +669,12 @@
        "Containment Failure")
     #s(item$
        Cooling-system
-       "MAINT_FRIG2"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Cooling system")
-    #s(item$
-       |Cooling-system-[1]|
        "MAINT_TECH8"
        1
        (Technology:Maintenance
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
-       "Cooling system [1]")
+       "Cooling system")
     #s(item$ Copper "YELLOW2" 121 (Rarity:Common) "Copper")
     #s(item$ Coprite "PLANT_POOP" 30 (Rarity:Common) "Coprite")
     #s(item$
@@ -982,142 +932,10 @@
        "De-Scented Pheromone Bottle")
     #s(item$
        Decal
-       "BUILDDECALSIMP4"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal")
-    #s(item$
-       |Decal-[10]|
-       "BUILDDECALNUM8"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [10]")
-    #s(item$
-       |Decal-[11]|
-       "BUILDDECALNUM7"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [11]")
-    #s(item$
-       |Decal-[12]|
-       "BUILDDECALNUM6"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [12]")
-    #s(item$
-       |Decal-[13]|
-       "BUILDDECALNUM5"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [13]")
-    #s(item$
-       |Decal-[14]|
-       "BUILDDECALNUM4"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [14]")
-    #s(item$
-       |Decal-[15]|
-       "BUILDDECALNUM3"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [15]")
-    #s(item$
-       |Decal-[16]|
-       "BUILDDECALNUM2"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [16]")
-    #s(item$
-       |Decal-[17]|
-       "BUILDDECALNUM1"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [17]")
-    #s(item$
-       |Decal-[18]|
-       "BUILDDECALNUM0"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [18]")
-    #s(item$
-       |Decal-[19]|
-       "BUILDDECALNMS"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [19]")
-    #s(item$
-       |Decal-[1]|
-       "BUILDDECALSIMP3"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [1]")
-    #s(item$
-       |Decal-[20]|
-       "BUILDDECALHELLO"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [20]")
-    #s(item$
-       |Decal-[21]|
-       "BUILDDECAL2"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [21]")
-    #s(item$
-       |Decal-[22]|
        "BUILDDECAL"
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [22]")
-    #s(item$
-       |Decal-[2]|
-       "BUILDDECALSIMP2"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [2]")
-    #s(item$
-       |Decal-[3]|
-       "BUILDDECALSIMP1"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [3]")
-    #s(item$
-       |Decal-[4]|
-       "BUILDDECALVIS5"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [4]")
-    #s(item$
-       |Decal-[5]|
-       "BUILDDECALVIS4"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [5]")
-    #s(item$
-       |Decal-[6]|
-       "BUILDDECALVIS3"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [6]")
-    #s(item$
-       |Decal-[7]|
-       "BUILDDECALVIS2"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [7]")
-    #s(item$
-       |Decal-[8]|
-       "BUILDDECALVIS1"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [8]")
-    #s(item$
-       |Decal-[9]|
-       "BUILDDECALNUM9"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Decal [9]")
+       "Decal")
     #s(item$
        Decommissioned-Circuit-Board
        "TRA_TECH1"
@@ -1455,28 +1273,10 @@
        "Five Dimensional Torus")
     #s(item$
        Flag
-       "FLAG4"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Flag")
-    #s(item$
-       |Flag-[1]|
-       "FLAG3"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Flag [1]")
-    #s(item$
-       |Flag-[2]|
-       "FLAG2"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Flag [2]")
-    #s(item$
-       |Flag-[3]|
        "FLAG1"
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Flag [3]")
+       "Flag")
     #s(item$
        Flat-Panel
        "BUILDFLATPANEL"
@@ -1497,22 +1297,10 @@
        "Floor Mat")
     #s(item$
        Flora-Containment
-       "PLANTPOT3"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Flora Containment")
-    #s(item$
-       |Flora-Containment-[1]|
-       "PLANTPOT2"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Flora Containment [1]")
-    #s(item$
-       |Flora-Containment-[2]|
        "PLANTPOT1"
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Flora Containment [2]")
+       "Flora Containment")
     #s(item$
        Foundation
        "FOUNDATION"
@@ -1575,64 +1363,10 @@
        "Freighter Stairs")
     #s(item$
        Freighter-Storage-Unit
-       "S_CONTAINER9"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Freighter Storage Unit")
-    #s(item$
-       |Freighter-Storage-Unit-[1]|
-       "S_CONTAINER8"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Freighter Storage Unit [1]")
-    #s(item$
-       |Freighter-Storage-Unit-[2]|
-       "S_CONTAINER7"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Freighter Storage Unit [2]")
-    #s(item$
-       |Freighter-Storage-Unit-[3]|
-       "S_CONTAINER6"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Freighter Storage Unit [3]")
-    #s(item$
-       |Freighter-Storage-Unit-[4]|
-       "S_CONTAINER5"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Freighter Storage Unit [4]")
-    #s(item$
-       |Freighter-Storage-Unit-[5]|
-       "S_CONTAINER4"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Freighter Storage Unit [5]")
-    #s(item$
-       |Freighter-Storage-Unit-[6]|
-       "S_CONTAINER3"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Freighter Storage Unit [6]")
-    #s(item$
-       |Freighter-Storage-Unit-[7]|
-       "S_CONTAINER2"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Freighter Storage Unit [7]")
-    #s(item$
-       |Freighter-Storage-Unit-[8]|
-       "S_CONTAINER1"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Freighter Storage Unit [8]")
-    #s(item$
-       |Freighter-Storage-Unit-[9]|
        "S_CONTAINER0"
        5
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Freighter Storage Unit [9]")
+       "Freighter Storage Unit")
     #s(item$
        Freighter-Warp-Reactor-Sigma
        "F_HDRIVEBOOST1"
@@ -2265,22 +1999,10 @@
        "Landing Pad")
     #s(item$
        Large-Freighter-Room
-       "CUBEROOMC_SPACE"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Large Freighter Room")
-    #s(item$
-       |Large-Freighter-Room-[1]|
-       "CUBEROOMB_SPACE"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Large Freighter Room [1]")
-    #s(item$
-       |Large-Freighter-Room-[2]|
        "CUBEROOM_SPACE"
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Large Freighter Room [2]")
+       "Large Freighter Room")
     #s(item$
        Large-Glass-Panel
        "PANEL_GLASS"
@@ -2373,7 +2095,7 @@
        "Life Support Module (S)")
     #s(item$
        Light
-       "BUILDLIGHT3"
+       "SMALLLIGHT"
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "Light")
@@ -2391,24 +2113,6 @@
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
        "Light Table")
-    #s(item$
-       |Light-[1]|
-       "BUILDLIGHT2"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Light [1]")
-    #s(item$
-       |Light-[2]|
-       "BUILDLIGHT"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Light [2]")
-    #s(item$
-       |Light-[3]|
-       "SMALLLIGHT"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Light [3]")
     #s(item$
        Linking-Post
        "CORNERPOST"
@@ -2517,20 +2221,12 @@
        "Mass Accelerator")
     #s(item$
        Master-Circuit
-       "MAINT_FRIG7"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Master Circuit")
-    #s(item$
-       |Master-Circuit-[1]|
        "MAINT_TECH18"
        1
        (Technology:Maintenance
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
-       "Master Circuit [1]")
+       "Master Circuit")
     #s(item$
        Medium-Refiner
        "BUILD_REFINER2"
@@ -2878,16 +2574,10 @@
        "Nomad Geobay")
     #s(item$
        Nonlinear-Optics
-       "UT_SHIPMINI"
-       1
-       (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Common)
-       "Nonlinear Optics")
-    #s(item$
-       |Nonlinear-Optics-[1]|
        "UT_SHIPGUN"
        1
        (Technology:Ship TechnologyRarity:Rare TechShopRarity:Common)
-       "Nonlinear Optics [1]")
+       "Nonlinear Optics")
     #s(item$
        Noospheric-Orb
        "ATLAS_SEED_3"
@@ -3012,22 +2702,10 @@
     #s(item$ Paraffinium "LUSH1" 62 (Rarity:Uncommon) "Paraffinium")
     #s(item$
        Paving
-       "BUILDPAVINGTALL"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Paving")
-    #s(item$
-       |Paving-[1]|
-       "BUILDPAVING_BIG"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Paving [1]")
-    #s(item$
-       |Paving-[2]|
        "BUILDPAVING"
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Paving [2]")
+       "Paving")
     #s(item$
        Pearl-Offering
        "MAINT_SEALOCK1"
@@ -3117,20 +2795,12 @@
        "Photonix Core")
     #s(item$
        Photovoltaic-Panel
-       "MAINT_FRIG9"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Photovoltaic Panel")
-    #s(item$
-       |Photovoltaic-Panel-[1]|
        "MAINT_TECH24"
        1
        (Technology:Maintenance
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
-       "Photovoltaic Panel [1]")
+       "Photovoltaic Panel")
     #s(item$
        Pilgrim-Geobay
        "GARAGE_B"
@@ -3214,132 +2884,12 @@
        "Portable Refiner")
     #s(item$
        Portal-Glyph
-       "MAINT_PORTAL16"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph")
-    #s(item$
-       |Portal-Glyph-[10]|
-       "MAINT_PORTAL6"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [10]")
-    #s(item$
-       |Portal-Glyph-[11]|
-       "MAINT_PORTAL5"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [11]")
-    #s(item$
-       |Portal-Glyph-[12]|
-       "MAINT_PORTAL4"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [12]")
-    #s(item$
-       |Portal-Glyph-[13]|
-       "MAINT_PORTAL3"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [13]")
-    #s(item$
-       |Portal-Glyph-[14]|
-       "MAINT_PORTAL2"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [14]")
-    #s(item$
-       |Portal-Glyph-[15]|
        "MAINT_PORTAL1"
        1
        (Technology:Maintenance
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
-       "Portal Glyph [15]")
-    #s(item$
-       |Portal-Glyph-[1]|
-       "MAINT_PORTAL15"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [1]")
-    #s(item$
-       |Portal-Glyph-[2]|
-       "MAINT_PORTAL14"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [2]")
-    #s(item$
-       |Portal-Glyph-[3]|
-       "MAINT_PORTAL13"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [3]")
-    #s(item$
-       |Portal-Glyph-[4]|
-       "MAINT_PORTAL12"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [4]")
-    #s(item$
-       |Portal-Glyph-[5]|
-       "MAINT_PORTAL11"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [5]")
-    #s(item$
-       |Portal-Glyph-[6]|
-       "MAINT_PORTAL10"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [6]")
-    #s(item$
-       |Portal-Glyph-[7]|
-       "MAINT_PORTAL9"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [7]")
-    #s(item$
-       |Portal-Glyph-[8]|
-       "MAINT_PORTAL8"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [8]")
-    #s(item$
-       |Portal-Glyph-[9]|
-       "MAINT_PORTAL7"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Portal Glyph [9]")
+       "Portal Glyph")
     #s(item$
        Positron-Ejector
        "SHIPSHOTGUN"
@@ -3386,36 +2936,20 @@
        "Power Condenser")
     #s(item$
        Power-Distributor
-       "MAINT_FRIG8"
+       "MAINT_TECH19"
        1
        (Technology:Maintenance
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
        "Power Distributor")
     #s(item$
-       |Power-Distributor-[1]|
-       "MAINT_TECH19"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Power Distributor [1]")
-    #s(item$
        Pressure-Chamber
-       "MAINT_FRIG6"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Pressure Chamber")
-    #s(item$
-       |Pressure-Chamber-[1]|
        "MAINT_TECH17"
        1
        (Technology:Maintenance
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
-       "Pressure Chamber [1]")
+       "Pressure Chamber")
     #s(item$
        Projectile-Ammunition
        "AMMO"
@@ -3758,20 +3292,12 @@
        "Server")
     #s(item$
        Servo-Arm
-       "MAINT_FRIG4"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Servo Arm")
-    #s(item$
-       |Servo-Arm-[1]|
        "MAINT_TECH15"
        1
        (Technology:Maintenance
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
-       "Servo Arm [1]")
+       "Servo Arm")
     #s(item$
        Shattered-Bulwark
        "SHIPSLOT_DMG3"
@@ -4042,20 +3568,12 @@
        "Solar Vine")
     #s(item$
        Solenoid
-       "MAINT_FRIG5"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Solenoid")
-    #s(item$
-       |Solenoid-[1]|
        "MAINT_TECH16"
        1
        (Technology:Maintenance
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
-       "Solenoid [1]")
+       "Solenoid")
     #s(item$
        Solid-Cube
        "CUBESOLID"
@@ -4102,16 +3620,10 @@
        "Square Deepwater Chamber")
     #s(item$
        Square-Room
-       "MAINROOMCUBEF"
-       2
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Square Room")
-    #s(item$
-       |Square-Room-[1]|
        "MAINROOMCUBE"
        3
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Square Room [1]")
+       "Square Room")
     #s(item$
        Standing-Planter
        "CARBONPLANTER"
@@ -4181,70 +3693,10 @@
        "State Phasure")
     #s(item$
        Storage-Container
-       "CHEST"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Storage Container")
-    #s(item$
-       |Storage-Container-[10]|
        "CONTAINER0"
        5
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Storage Container [10]")
-    #s(item$
-       |Storage-Container-[1]|
-       "CONTAINER9"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Storage Container [1]")
-    #s(item$
-       |Storage-Container-[2]|
-       "CONTAINER8"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Storage Container [2]")
-    #s(item$
-       |Storage-Container-[3]|
-       "CONTAINER7"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Storage Container [3]")
-    #s(item$
-       |Storage-Container-[4]|
-       "CONTAINER6"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Storage Container [4]")
-    #s(item$
-       |Storage-Container-[5]|
-       "CONTAINER5"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Storage Container [5]")
-    #s(item$
-       |Storage-Container-[6]|
-       "CONTAINER4"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Storage Container [6]")
-    #s(item$
-       |Storage-Container-[7]|
-       "CONTAINER3"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Storage Container [7]")
-    #s(item$
-       |Storage-Container-[8]|
-       "CONTAINER2"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Storage Container [8]")
-    #s(item$
-       |Storage-Container-[9]|
-       "CONTAINER1"
-       5
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Storage Container [9]")
+       "Storage Container")
     #s(item$
        Storage-Panel
        "STORAGEPANEL"
@@ -4364,22 +3816,10 @@
        "TRA_COMPONENT5")
     #s(item$
        Table
-       "BUILDTABLE3"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Table")
-    #s(item$
-       |Table-[1]|
-       "BUILDTABLE2"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Table [1]")
-    #s(item$
-       |Table-[2]|
        "BUILDTABLE"
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Table [2]")
+       "Table")
     #s(item$
        Tall-Cabinet
        "BUILDHCABINET"
@@ -4476,20 +3916,12 @@
        "Thermic Condensate")
     #s(item$
        Thermoregulator
-       "MAINT_FRIG3"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Thermoregulator")
-    #s(item$
-       |Thermoregulator-[1]|
        "MAINT_TECH13"
        1
        (Technology:Maintenance
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
-       "Thermoregulator [1]")
+       "Thermoregulator")
     #s(item$
        Thin-Concrete-Wall
        "C_WALL_H"
@@ -4510,20 +3942,12 @@
        "Thin Wooden Wall")
     #s(item$
        Tiny-motor
-       "MAINT_FRIG1"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Tiny motor")
-    #s(item$
-       |Tiny-motor-[1]|
        "MAINT_TECH7"
        1
        (Technology:Maintenance
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
-       "Tiny motor [1]")
+       "Tiny motor")
     #s(item$
        Tower-Module
        "BUILDTOWER"
@@ -4550,20 +3974,12 @@
        "Toxic Protection Module (S)")
     #s(item$
        Transmission-Box
-       "MAINT_FRIG10"
-       1
-       (Technology:Maintenance
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Transmission Box")
-    #s(item$
-       |Transmission-Box-[1]|
        "MAINT_TECH25"
        1
        (Technology:Maintenance
         TechnologyRarity:Impossible
         TechShopRarity:Impossible)
-       "Transmission Box [1]")
+       "Transmission Box")
     #s(item$
        Trident-Key
        "TRIDENT_KEY"
@@ -4617,212 +4033,10 @@
        "Unstable Plasma")
     #s(item$
        Upgrade-Module
-       "T_SUBGUN"
-       1
-       (Technology:Submarine
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module")
-    #s(item$
-       |Upgrade-Module-[10]|
-       "T_UNW"
-       1
-       (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [10]")
-    #s(item$
-       |Upgrade-Module-[11]|
-       "T_SHIELD"
-       1
-       (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [11]")
-    #s(item$
-       |Upgrade-Module-[12]|
-       "T_JET"
-       1
-       (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [12]")
-    #s(item$
-       |Upgrade-Module-[13]|
-       "T_ENERGY"
-       1
-       (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [13]")
-    #s(item$
-       |Upgrade-Module-[14]|
-       "T_SMG"
-       1
-       (Technology:Weapon
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [14]")
-    #s(item$
-       |Upgrade-Module-[15]|
-       "T_SHOTGUN"
-       1
-       (Technology:Weapon
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [15]")
-    #s(item$
-       |Upgrade-Module-[16]|
-       "T_RAIL"
-       1
-       (Technology:Weapon
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [16]")
-    #s(item$
-       |Upgrade-Module-[17]|
-       "T_T_GREN"
-       1
-       (Technology:Weapon
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [17]")
-    #s(item$
-       |Upgrade-Module-[18]|
-       "T_GRENADE"
-       1
-       (Technology:Weapon
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [18]")
-    #s(item$
-       |Upgrade-Module-[19]|
-       "T_BOLT"
-       1
-       (Technology:Weapon
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [19]")
-    #s(item$
-       |Upgrade-Module-[1]|
-       "T_SUB"
-       1
-       (Technology:Submarine
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [1]")
-    #s(item$
-       |Upgrade-Module-[20]|
-       "T_LASER"
-       1
-       (Technology:Weapon
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [20]")
-    #s(item$
-       |Upgrade-Module-[21]|
-       "T_SCAN"
-       1
-       (Technology:Weapon
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [21]")
-    #s(item$
-       |Upgrade-Module-[22]|
-       "T_SHIPBLOB"
-       1
-       (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [22]")
-    #s(item$
-       |Upgrade-Module-[23]|
-       "T_SHIPMINI"
-       1
-       (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [23]")
-    #s(item$
-       |Upgrade-Module-[24]|
-       "T_SHIPSHOT"
-       1
-       (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [24]")
-    #s(item$
-       |Upgrade-Module-[25]|
-       "T_SHIPLAS"
-       1
-       (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [25]")
-    #s(item$
-       |Upgrade-Module-[26]|
-       "T_SHIPGUN"
-       1
-       (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [26]")
-    #s(item$
-       |Upgrade-Module-[27]|
-       "T_SHIPSHLD"
-       1
-       (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [27]")
-    #s(item$
-       |Upgrade-Module-[28]|
-       "T_HDRIVE"
-       1
-       (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [28]")
-    #s(item$
-       |Upgrade-Module-[29]|
        "T_SHIPJUMP"
        1
        (Technology:Ship TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [29]")
-    #s(item$
-       |Upgrade-Module-[2]|
-       "T_EXENG"
-       1
-       (Technology:Exocraft
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [2]")
-    #s(item$
-       |Upgrade-Module-[3]|
-       "T_BOOST"
-       1
-       (Technology:Exocraft
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [3]")
-    #s(item$
-       |Upgrade-Module-[4]|
-       "T_EXLAS"
-       1
-       (Technology:Exocraft
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [4]")
-    #s(item$
-       |Upgrade-Module-[5]|
-       "T_EXGUN"
-       1
-       (Technology:Exocraft
-        TechnologyRarity:Impossible
-        TechShopRarity:Impossible)
-       "Upgrade Module [5]")
-    #s(item$
-       |Upgrade-Module-[6]|
-       "T_HOTPROT"
-       1
-       (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [6]")
-    #s(item$
-       |Upgrade-Module-[7]|
-       "T_COLDPROT"
-       1
-       (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [7]")
-    #s(item$
-       |Upgrade-Module-[8]|
-       "T_TOX"
-       1
-       (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [8]")
-    #s(item$
-       |Upgrade-Module-[9]|
-       "T_RAD"
-       1
-       (Technology:Suit TechnologyRarity:Impossible TechShopRarity:Impossible)
-       "Upgrade Module [9]")
+       "Upgrade Module")
     #s(item$ Uranium "RADIO1" 62 (Rarity:Uncommon) "Uranium")
     #s(item$
        Venom-Urchin
@@ -4881,22 +4095,10 @@
        "Wall Fan")
     #s(item$
        Wall-Flag
-       "WALLFLAG3"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Wall Flag")
-    #s(item$
-       |Wall-Flag-[1]|
-       "WALLFLAG2"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Wall Flag [1]")
-    #s(item$
-       |Wall-Flag-[2]|
        "WALLFLAG1"
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Wall Flag [2]")
+       "Wall Flag")
     #s(item$
        Wall-Screen
        "WALLSCREEN"
@@ -4965,28 +4167,10 @@
        "Welding Soap")
     #s(item$
        Window
-       "CUBEWINDOWSMALL"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Window")
-    #s(item$
-       |Window-[1]|
-       "CUBEWINDOWOVAL"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Window [1]")
-    #s(item$
-       |Window-[2]|
-       "CUBEWINDOW"
-       1
-       (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Window [2]")
-    #s(item$
-       |Window-[3]|
        "BUILDWINDOW"
        1
        (Substance:BuildingPart Rarity:Common Product:BuildingPart)
-       "Window [3]")
+       "Window")
     #s(item$
        Wonder
        "SPEC_EMOTE04"
