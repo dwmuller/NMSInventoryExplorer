@@ -286,6 +286,12 @@
   (load-item-table-doc product-table    "GcProductTable"    save-id-set name-id-map)
   ;(load-item-table-doc (build-path root (names-value doc "ProceduralProductTable")) "GcProceduralProductTable"  save-id-set name-id-map)
 
+  ; Report on ambiguous translation references.
+  (for ([(key items) name-id-map]
+        #:when (> (length items) 1))
+    (printf "~a referenced by: (~a)~n"
+            key (string-join (map car items))))
+
   ; Next, find English translations for each item based on the name-id. In the process
   ; of doing these, we also turn the item data into actual item$ struct objects. The
   ; English names are used to generate name-symbols that are used a lot in the program
