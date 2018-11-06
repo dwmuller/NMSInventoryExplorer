@@ -52,16 +52,6 @@ Startup state, showing table of selected inventory contents:
 Recipe finder after successfully finding a recipe chain using selected inventory:
 ![screenshot with successful recipe list](./screenshots/found-recipe.png)
 
-## Problems
-
-Hello Games tried to obscure the save file with a release in late 2018
-that changed the plain English JSON tags to obfuscated bits of text.
-The mapping of these tags in save-file.rkt is incomplete, based on what
-I was able to figure out so far from one of my own save files.
-Similarly, the information in items.rkt, which enumerates the items in
-the game with their base values (where known) is not complete, nor is
-the listing of recipes in recipes.rkt.
-
 ## Implementation Notes
 
 The software is written in [Racket], and uses its native GUI library.
@@ -69,8 +59,8 @@ To run the software yourself, download and install the DrRacket IDE,
 open the NMSInventoryExplorer.rkt file, and press F5 or click the Run
 button.
 
-The IDE and its debugging tools are capable but not wonderful. But
-with it, you can get programming very quickly, and the documentation
+The IDE and its debugging tools are capable but not wonderful. However,
+you can get programming with it very quickly, and the documentation
 for the language and its libraries is quite good.
 
 ## Building
