@@ -1,5 +1,5 @@
 #lang racket
-; Generated via parse-items.rkt by danm at 2018-11-04T20:28:51 Eastern Standard Time
+; Generated via parse-items.rkt by danm at 2018-11-07T21:27:44 Eastern Standard Time
 (require "items.rkt" "recipes.rkt")
 (define generated-build-recipes
   '((Ablative-Armour (Cobalt-Mirror . 1) (Sodium-Nitrate . 50))
@@ -37,7 +37,6 @@
      (Uranium . 100)
      (Metal-Plating . 2)
      (Advanced-Ion-Battery . 1))
-    (BRIDGECONNECTOR (Silver . 120) (Tritium . 20))
     (Barnacle (Cyto=Phosphate . 80))
     (Barrel-Fabricator (Ionised-Cobalt . 10) (Antimatter . 1))
     (Barrel-Ioniser (Cobalt-Mirror . 1) (Technology-Module . 1))
@@ -64,7 +63,6 @@
     (Bronze-Fighter-Statue (Pure-Ferrite . 15) (Copper . 15))
     (Bronze-Gek-Statue (Pure-Ferrite . 15) (Copper . 15))
     (Bronze-Walker-Statue (Pure-Ferrite . 15) (Copper . 15))
-    (CORRIDOR_WINDOW (Ionised-Cobalt . 5) (Glass . 1))
     (Cadmium-Drive (Chromatic-Metal . 250) (Technology-Module . 1))
     (Candelabra-Bloom (Cyto=Phosphate . 80))
     (Canister-Rack (Condensed-Carbon . 10))
@@ -267,7 +265,6 @@
      (Magnetised-Ferrite . 50)
      (Tritium . 50)
      (Technology-Module . 1))
-    (HEALTHPLANT (Carbon . 10))
     (Hand-of-Approval-Decal (Carbon . 20))
     (Haz=Mat-Gauntlet (Chromatic-Metal . 50) (Sodium-Nitrate . 20))
     (Hazard-Protection (Ferrite-Dust . 100))
@@ -379,7 +376,6 @@
      (Living-Pearl . 2))
     (Mordite-Root (Mordite . 40))
     (Muster-Point (Pure-Ferrite . 10))
-    (NPCEXPLORER001 (Pure-Ferrite . 50))
     (Nada-Decal (Carbon . 20))
     (Nautilon-Cannon
      (Chlorine . 100)

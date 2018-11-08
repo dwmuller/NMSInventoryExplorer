@@ -61,8 +61,11 @@
 (define (get-sorted-item-names)
   (sort (hash-keys items) symbol<?))
 
-(define (add-item item)
-  (hash-set! items (item$-name item) item)
-  (hash-set! items-by-save-id (item$-id item) item))
+(define (add-item id item)
+  (define name (item$-name item))
+  (define existing-item (hash-ref items name #f))
+  (unless existing-item
+    (hash-set! items (item$-name item) item))
+  (hash-set! items-by-save-id id (or existing-item item)))
 
          

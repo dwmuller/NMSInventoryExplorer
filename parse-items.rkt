@@ -176,27 +176,32 @@
     (raise-result-error 'load-localization-table
                         "<Data template=\"TkLocalisationTable\" ..."
                         (format "<~a template=\"~a\" ..." (element-name doc) (get-attribute doc 'template))))
-  (for ([elem (child-element-sequence doc '(Property Property))])
-    (when (string=? "TkLocalisationEntry.xml" (get-attribute elem 'value))
-      (define name-id (names-value elem "Id"))
-      (define translation (names-value elem language "Value"))
-      (define items-data (hash-ref name-id-map name-id null))
-      ; Report on multiple uses of the same translation:
-      (when (> (length items-data) 1)
-        (printf "* ~a (~a) referenced by: (~a)~n"
-            translation name-id (string-join (map car items-data))))
-      ; Items that share a translation seem to be essentially identical,
-      ; differing only in appearance. We'll use the last one (which was the
-      ; first one encountered in a file) and ignore the rest, because the
-      ; appearance differences are immaterial to our application.
-      (unless (null? items-data)
-      (define data (last items-data))
-        (define item-name (label->item-name translation))
-        (define id (first data))
-        (hash-remove! name-id-map name-id)
-        (hash-set! id-map
-                   id
-                   (item$ item-name id (second data) (third data) translation))))))
+  (for/fold ([raw-build-recipes null])
+            ([elem (child-element-sequence doc '(Property Property))]
+             #:when (string=? "TkLocalisationEntry.xml" (get-attribute elem 'value)))
+    (define name-id (names-value elem "Id"))
+    (define translation (names-value elem language "Value"))
+    (define items-data (hash-ref name-id-map name-id #f))
+    (cond [items-data
+           ; Report on multiple uses of the same translation:
+           (when (> (length items-data) 1)
+             (printf "* ~a (~a) referenced by: (~a)~n"
+                     translation name-id (string-join (map car items-data))))
+           ; Items that share a translation seem to be essentially identical,
+           ; differing only in appearance. We'll use the last one (which was the
+           ; first one encountered in a file) as our reference. The others ids
+           ; be synonyms for the same item struct.
+           (define data (last items-data))
+           (define item-name (label->item-name translation))
+           (define ref-id (first data))
+           (hash-remove! name-id-map name-id)
+           (define item (item$ item-name ref-id (second data) (third data) translation))
+           (for ([id (map first items-data)])
+             (hash-set! id-map id item))
+           (if (> (length data) 3)
+               (cons (cons ref-id (list-tail data 3)) raw-build-recipes)
+               raw-build-recipes)]
+          [else raw-build-recipes])))
 
 ; Item readers return two values:
 ;   lower-name-id
@@ -236,14 +241,9 @@
          (printf "* Duplicate save-id: ~a, entry ~a in ~a ~n" (car data) index path)]
         [else
          (set-add! save-id-set (car data))
-         ;(when (hash-has-key? name-id-map name-lower-id) 
-         ; Dealing with multiple references to the same lowercase name entry:
-         ; CURRENTLY: Keep them all, add a suffix on dupes.
-         ; ALSO TRIED: First one wins. No idea how many items we dropped.
-         ; ALSO TRIED: Base on the fact that there are unused localization entries that would match, tried constructing alternate name reference.
-         ;             This made things worse.
-         ; ALSO TRIED: Last one wins. Not sure if this was better or worse.
-         ;(printf "Duplicate ref to name ~a by entry ~a: ~a in ~a~n" name-lower-id index id path))
+         ; Some items have distinct ids, but share the same translation string.
+         ; They are distinguished in the UI only by visuals
+         ; Here, we keep them all, indexed by the translation string.
          (hash-update! name-id-map name-lower-id (λ (v) (cons data v)) null)]))))
 
 ; TODO: Load NMS_REALITY_GCPROCEDURALTECHNOLOGYTABLE? Items there do not have BaseValue.
@@ -274,13 +274,13 @@
   (define substance-table  (get-filename "SubstanceTable"))
   (define product-table    (get-filename "ProductTable"))
 
-  ; Refiner recipes are stored directly in the default reality doc.
+  ; Refiner recipes are stored directly in the default reality doc. Save them for later processing.
   (define raw-refiner-recipes (read-refiner-recipes doc))
   
-  ; We're done with the top-level doc; free up the memory its XML rep uses.
+  ; We're done with the top-level doc; free up the memory its XML representation uses.
   (set! doc null)
 
-  ; Now we load all the item in. Items also often have a primary crafting recipe associated
+  ; Now we load all the items in. Items also often have a primary crafting recipe associated
   ; with them. The name-id-map is keyed by an identifier for a language-specific name. The
   ; mapping of these names to items is not unique, so each map entry is a list of data for
   ; multiple items.
@@ -299,43 +299,43 @@
   ; English names are used to generate name-symbols that are used a lot in the program
   ; to identify items. (This was convenient when items were being defined manually, and is
   ; still useful when debugging, but is not strictly necessary anymore -- the save-ids would suffice.)
-  (define all-item-data (apply append (hash-values name-id-map))) ; Save for later...
   (define id-map (make-hash))
-  ; By default, my game seems to be using U.K. English rather than U.S. English, so let's stick with that.
-  (scan-localization-table (build-path root "LANGUAGE/NMS_LOC1_ENGLISH.EXML") "English" name-id-map id-map)
-  (scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_ENGLISH.EXML") "English" name-id-map id-map)
-  (scan-localization-table (build-path root "LANGUAGE/NMS_UPDATE3_ENGLISH.EXML") "English" name-id-map id-map)
+  ; By default, my game seems to be using U.K. English rather than U.S. English, so let's stick with that,
+  ; or at least use it as a reference here. (Perhaps we'll load other languages later for use in the UI.)
+  ; Each invocation also returns a list of primary recipes for the items it resolved.
+  (define raw-build-recipes
+    (append
+     (scan-localization-table (build-path root "LANGUAGE/NMS_LOC1_ENGLISH.EXML") "English" name-id-map id-map)
+     (scan-localization-table (build-path root "LANGUAGE/NMS_LOC4_ENGLISH.EXML") "English" name-id-map id-map)
+     (scan-localization-table (build-path root "LANGUAGE/NMS_UPDATE3_ENGLISH.EXML") "English" name-id-map id-map)))
 
   ; Report some results.
   (printf "Found and translated ~a items.~n" (length (hash-keys id-map)))
+  
   (unless (null? (hash-keys name-id-map))
-    (printf "* Missing translations for ~a items:~n" (length (hash-keys name-id-map)))
-    (for ([(key value) name-id-map])
-      (printf "*   ~a: ~a~n" key value)))
-
-  ; Make up fake  names for the items for which we found no translation. Let's
-  ; hope they don't show up in the UI, but if they do we might have to figure out
-  ; why we didn't find user-friendly names for them.
-  (for ([lst (hash-values name-id-map)])
-    (for ([i lst])
-      (define item-fake-name (string->symbol (first i)))
-      (define id (first i))
-      (hash-set! id-map id (item$ item-fake-name id (second i) (third i) id))))
+    (printf "* Missing translations for ~a items.~n" (length (hash-keys name-id-map)))
+    ; Make up fake names for the items for which we found no translation. Let's
+    ; hope they don't show up in the UI, but if they do we might have to figure out
+    ; why we didn't find user-friendly names for them.
+    (for ([(key lst) name-id-map])
+      (for ([i lst])
+        (define id (first i))
+        (define item-fake-name (string->symbol id))
+        (printf "*   ~a: ~a -> ~a~n" key id item-fake-name)
+        (hash-set! id-map id (item$ item-fake-name id (second i) (third i) id)))))
 
   ; The basic and refiner recipes are currently expressed in terms of save-ids. Translate
-  ; these to item names. When that doesn't work (e.g. when synonymous items are dropped),
-  ; ignore them.
+  ; these to item names. Note that due to synonyms, some build recipes will be duplicates.
   (define (id->name id)
     (define item (hash-ref id-map id #f))
     (and item (item$-name item)))
   (define build-recipes
     (for/fold ([result null])
-              ([item all-item-data]
-               #:when (> (length item) 3))
+              ([item raw-build-recipes])
       (define name (id->name (first item)))
       (if name
           (cons (list* name
-                       (for/list ([i (list-tail item 3)])
+                       (for/list ([i (rest item )])
                          (cons (id->name (car i)) (cdr i))))
                 result)
           result)))
@@ -345,20 +345,22 @@
       (define output (id->name (first r)))
       (define inputs
         (for/list ([i (third r)])
-              (cons (id->name (car i)) (cdr i))))
+          (cons (id->name (car i)) (cdr i))))
       (cond
         [(and output (andmap car inputs))
-          (list* (list* output (second r) inputs) result)]
+         (list* (list* output (second r) inputs) result)]
         [else
          (printf "* Unresolved refiner recipe: ~a.~n" r)
          result])))
-  (values (hash-values id-map) build-recipes refiner-recipes))
+  (values id-map build-recipes refiner-recipes))
 
-(define-values (items build-recipes refiner-recipes)
+(define-values (id-map build-recipes refiner-recipes)
   (read-default-reality root))
 
 ; Show developer what "flags" we found for items:
-(pretty-print (list 'Flags (sort (remove-duplicates (append-map (λ (v) (item$-flags v)) items)) symbol<?)))
+(pretty-print (list 'Flags (sort (remove-duplicates (append-map (λ (v) (item$-flags v))
+                                                                (hash-values id-map)))
+                                 symbol<?)))
 
 (define (write-generated-items)
   (call-with-output-file (build-path output-root "generated-items.rkt") #:mode 'text #:exists 'replace
@@ -371,9 +373,9 @@
       (displayln (format "; Generated via parse-items.rkt by ~a at ~a" user timestamp) port)
       (pretty-write '(require "items.rkt") port)
       (writeln port)
-      (pretty-write (list 'define 'generated-items (list 'quote (sort items symbol<? #:key item$-name))) port)
+      (pretty-write (list 'define 'generated-items id-map) port)
       (writeln port)
-      (pretty-write '(for ([item generated-items]) (add-item item)) port))))
+      (pretty-write '(for ([(id item) generated-items]) (add-item id item)) port))))
 
 (define (write-generated-recipes)
   (call-with-output-file (build-path output-root "generated-recipes.rkt") #:mode 'text #:exists 'replace
