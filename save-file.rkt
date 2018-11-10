@@ -270,16 +270,17 @@
     [(cons 'chest (or 0 1 2 3 4 5 6 7 8 9)) #t]
     [_ #f]))
 
-(define (get-keyed-inventories json)
+
+(define (get-keyed-inventories json ships vehicles)
   (append
    (list
     (cons '(exosuit . 0)    (json->inventory json 'PlayerStateData 'Inventory))
     (cons '(exosuit . 1)    (json->inventory json 'PlayerStateData 'Inventory_Cargo))
     (cons '(freighter . 0)  (json->inventory json 'PlayerStateData 'FreighterInventory)))
-   (for/list ([n (in-naturals)]
+   (for/list ([n ships]
               [i (json->ship-inventories json)])
      (cons (cons 'ship n) i))
-   (for/list ([n (in-naturals)]
+   (for/list ([n vehicles]
               [i (json->vehicle-inventories json)])
      (cons (cons 'vehicle n) i))
    (for/list ([n (in-naturals)]
@@ -289,11 +290,13 @@
 (define (get-game-data save-file-path)
   (define modify-seconds (file-or-directory-modify-seconds save-file-path))
   (define json (call-with-input-file save-file-path read-json #:mode 'text))
+  (define ships (json->ships json))
+  (define vehicles (json->vehicles json))
   (game-data save-file-path
              modify-seconds
-             (get-keyed-inventories json)
-             (json->ships json)
-             (json->vehicles json)
+             (get-keyed-inventories json ships vehicles)
+             ships
+             vehicles
              (json->known-items json)))
 
 (define (get-default-data-path)
