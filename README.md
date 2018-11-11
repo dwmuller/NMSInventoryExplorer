@@ -54,7 +54,7 @@ Startup state, showing table of selected inventory contents:
 ![startup screenshot with inventory table](./screenshots/inventories.png)
 
 Item exploration:
-![screenshot showing item exploration](.screenshots/explore-item.png)
+![screenshot showing item exploration](./screenshots/explore-item.png)
 
 Recipe finder after successfully finding a recipe chain using selected inventory:
 ![screenshot with successful recipe list](./screenshots/found-recipe.png)
