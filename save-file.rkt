@@ -25,12 +25,6 @@
    ; The keys are pairs (conses) with a specific structure to identify an inventory; see inventory-key?.
    ; The values are inventories; see inventory.rkt.
    inventories
-   ; List of ship names. Length varies; I believe the current in-game limit is three, but I'm not sure.
-   ; The ship indexes in inventory keys corresponds to position in this list.
-   starships
-   ; List of vehicle names. Length varies; current in-game limit is three.
-   ; The vehicle indexes in inventory keys corresponds to position in this list.
-   vehicles
    ; Set of item names known by player
    known-items)
   #:transparent)
@@ -271,16 +265,16 @@
     [_ #f]))
 
 
-(define (get-keyed-inventories json ships vehicles)
+(define (get-keyed-inventories json)
   (append
    (list
     (cons '(exosuit . 0)    (json->inventory json 'PlayerStateData 'Inventory))
     (cons '(exosuit . 1)    (json->inventory json 'PlayerStateData 'Inventory_Cargo))
     (cons '(freighter . 0)  (json->inventory json 'PlayerStateData 'FreighterInventory)))
-   (for/list ([n ships]
+   (for/list ([n (json->ships json)]
               [i (json->ship-inventories json)])
      (cons (cons 'ship n) i))
-   (for/list ([n vehicles]
+   (for/list ([n (json->vehicles json)]
               [i (json->vehicle-inventories json)])
      (cons (cons 'vehicle n) i))
    (for/list ([n (in-naturals)]
@@ -290,13 +284,9 @@
 (define (get-game-data save-file-path)
   (define modify-seconds (file-or-directory-modify-seconds save-file-path))
   (define json (call-with-input-file save-file-path read-json #:mode 'text))
-  (define ships (json->ships json))
-  (define vehicles (json->vehicles json))
   (game-data save-file-path
              modify-seconds
-             (get-keyed-inventories json ships vehicles)
-             ships
-             vehicles
+             (get-keyed-inventories json)
              (json->known-items json)))
 
 (define (get-default-data-path)
