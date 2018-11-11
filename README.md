@@ -27,6 +27,10 @@ is represented in the selected inventories. In other words, no row
 is show for an item unless you have at least one of that item in a
 selected inventory.
 
+The Item Explorer tab shows you some basic information about an item,
+including lists of recipes that use that item as an input, or that
+produce it as an output.
+
 The Recipe Finder tab helps you find recipes for items that you wish
 to craft. Choose a craftable item from the choice box, enter how many
 of the item you want, and press the Search button. The program will
@@ -48,6 +52,9 @@ help you keep track while applying a lengthy sequence.
 
 Startup state, showing table of selected inventory contents:
 ![startup screenshot with inventory table](./screenshots/inventories.png)
+
+Item exploration:
+![screenshot showing item exploration](.screenshots/explore-item.png)
 
 Recipe finder after successfully finding a recipe chain using selected inventory:
 ![screenshot with successful recipe list](./screenshots/found-recipe.png)
