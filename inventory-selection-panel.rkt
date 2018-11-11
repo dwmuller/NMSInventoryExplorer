@@ -2,7 +2,8 @@
 
 (provide inventory-selection-panel% inventory-key->label)
 
-(require table-panel)
+(require table-panel
+         "inventory-key.rkt")
 
 ;;
 ;; Inventory selection panel.
@@ -155,20 +156,3 @@
       (callback (get-selected-inventory-keys)))
     
     ))
-
-;;;
-;;; (inventory-key->label key) -> string?
-;;;
-;;; key: inventory-key?
-;;;
-(define (inventory-key->label key)
-  (match (car key)
-    ['exosuit (match (cdr key)
-                [0 "Exo General"]
-                [1 "Exo Cargo"])]
-    ['freighter (match (cdr key)
-                  [0 "Freighter"])]
-    ['ship    (cdr key)]
-    ['vehicle (cdr key)]
-    ['chest   (format "Storage ~a" (cdr key))]))
-

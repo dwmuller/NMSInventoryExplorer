@@ -7,8 +7,7 @@
 (provide (struct-out game-data)
          get-default-data-path
          get-latest-save-file-path
-         get-game-data
-         inventory-key?)
+         get-game-data)
 
 ;;;
 ;;; A struct representing the data that we snarfed from a save file.
@@ -255,16 +254,6 @@
                     (printf "Unknown item id in ~a [~a]: ~a~n" (list 'PlayerStateData key) index id)
                     result2])))))
     
-(define (inventory-key? k)
-  (match k
-    [(cons 'exosuit (or 0 1)) #t]
-    [(cons 'freighter 0) #t]
-    [(cons 'ship (? integer? n)) #:when (not (negative? n)) #t]
-    [(cons 'vehicle '(or 0 1 2)) #t]
-    [(cons 'chest (or 0 1 2 3 4 5 6 7 8 9)) #t]
-    [_ #f]))
-
-
 (define (get-keyed-inventories json)
   (append
    (list
