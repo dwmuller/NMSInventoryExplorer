@@ -66,7 +66,8 @@
       (cond
         [(or (not target-count)
              (not (positive? target-count)))
-         (message-box "Input error" "The output quantity must be a positive integer." this '(stop ok))]
+         (message-box "Input error" "The output quantity must be a positive integer."
+                      (send this get-top-level-window) '(stop ok))]
         [else
          (clear-recipe-finder-output)
          (define-values (best deficit) (get-best-recipe-sequence target-item target-count available-inventory))

@@ -12,12 +12,19 @@
          "inventory.rkt"
          "data-table.rkt"
          "generated-items.rkt" ; Defines items, provides nothing.
-         "recipes.rkt"
          "generated-recipes.rkt")
 
 ; TODO: Show recipe list's total inventory usage.
 ; TODO: Enhance recipe search to produce multiple results.
 ; TODO? Improve ranking of failed recipes - prefer "common" input items?
+
+(define (open-save-file)
+  (define sfpath (finder:get-file (path-only (send save-file-path get-value))
+                                  "Select Save File"
+                                  "save[0-9]*\\.hg$"))
+  (when sfpath
+    (load-data! sfpath)
+    (send save-file-path set-value (path->string sfpath))))
 
 (define (inventory-selection-changed selected-inventory-keys)
   (set! total-of-selected-inventories (calc-totals-inventory))
@@ -90,16 +97,17 @@
        [parent frame]
        [label "Save File"]
        [stretchable-height #f]))
-(define data-root
-  (new text-field%
-       [parent file-selection]
-       [label "NMS data directory:"]
-       [init-value (path->string (get-default-data-path))]))
+(send file-selection set-orientation 'horizontal)
+(new button%
+     [label "Open Save File ..."]
+     [parent file-selection]
+     [callback (λ (ignored ...) (queue-callback open-save-file))])
+
 (define save-file-path
   (new text-field%
        [parent file-selection]
        [label "File:"]
-       [init-value (path->string (find-relative-path (get-default-data-path) (get-latest-save-file-path)))]))
+       [init-value (path->string (get-latest-save-file-path))]))
 
 ;;;
 ;;; Main panel, including inventory selection and related data displays.
