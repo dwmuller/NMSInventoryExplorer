@@ -2,8 +2,7 @@
 
 (provide recipe-finder-panel%)
 
-(require "inventory-key.rkt"
-         "items.rkt"
+(require "items.rkt"
          "recipes.rkt"
          "inventory.rkt"
          "search.rkt")
@@ -108,9 +107,8 @@
         (define reps (cdr app))
         (new check-box%
              [parent outputs-column]
-             [label (format "~aX ~a ~a ~a"
+             [label (format "~aX ~a ~a"
                             reps
-                            (recipe$-action recipe)
                             (item->label (recipe$-output recipe))
                             (recipe$-count recipe))]
              [stretchable-height #t])
@@ -123,7 +121,7 @@
                           [parent inputs-column]
                           [stretchable-height #t]
                           [alignment '(left center)])]
-             [label (string-append " <== " (string-join inputs ", "))])
+             [label (format " <== ~a ~a" (recipe$-action recipe) (string-join inputs ", "))])
         ))
 
     (define (get-recipe-finder-output-item)

@@ -7,6 +7,7 @@
 
 (require "inventory-selection-panel.rkt"
          "recipe-finder-panel.rkt"
+         "item-explorer-panel.rkt"
          "save-file.rkt"
          "items.rkt"
          "inventory.rkt"
@@ -131,7 +132,7 @@
   (new tab-panel%
        [parent main-panel]
        [callback select-tab]
-       [choices '("Inventories" "Recipe Finder")]))
+       [choices '("Inventories" "Item Explorer" "Recipe Finder")]))
 
 (define tab-data-area
   (new panel:single% [parent tab-area]))
@@ -150,6 +151,14 @@
        [default-column-vars '([alignment (right center)])]))
 
 ;;
+;; Item Explorer panel, one of the tab choices.
+;;
+(define item-explorer
+  (new item-explorer-panel%
+       [parent tab-data-area]
+       [alignment '(left top)]))
+
+;;
 ;; Recipe Finder panel, one of the tab choices
 ;;
 (define recipe-finder
@@ -159,7 +168,7 @@
 ;;
 ;; Vector of tab panel choices.
 ;;
-(define tab-panels (vector inventories-grid recipe-finder))
+(define tab-panels (vector inventories-grid item-explorer recipe-finder))
 
 (load-data! (get-latest-save-file-path))
 (send tab-data-area active-child inventories-grid)
